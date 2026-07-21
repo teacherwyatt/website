@@ -1,0 +1,4 @@
+# Host-based redirects (apex -> www) are installed by scripts/setup-apex-redirect
+# as a Cloudflare zone-level Dynamic Redirect rule. The pages.dev hostnames are
+# gated by the Cloudflare Access policy installed by scripts/setup-cloudflare-access.
+# _redirects only supports path-based rules and cannot match by hostname.

@@ -1,0 +1,39 @@
+base_url = "https://teacherwyatt.pages.dev"
+title = "TeacherWyatt"
+description = "Warm, friendly English & Spanish lessons — online and in person"
+default_language = "en"
+compile_sass = true
+minify_html = true
+generate_feeds = true
+feed_filenames = ["atom.xml"]
+
+[markdown]
+
+[markdown.highlighting]
+theme = "solarized-light"
+
+# --- Multilingual (i18n) -----------------------------------------------------
+# English is the default language (served at /). Spanish is served under /es/.
+# Each content file has an `.en.md` / `.es.md` twin. Add `.it.md` / `.fr.md`
+# later plus a matching [languages.xx] block to grow to more audiences.
+[languages.es]
+title = "TeacherWyatt"
+description = "Clases de inglés y español, cálidas y cercanas — online y presenciales"
+generate_feeds = true
+
+
+[extra]
+
+[[extra.links]]
+name = "Facebook"
+url = "https://www.facebook.com/thewyattteacher"
+icon = "facebook"
+footer = true
+
+[[extra.links]]
+name = "Email"
+url = "mailto:wyatt.teaching@gmail.com"
+icon = "email"
+# Keep the email out of the footer so cloudflare doesn't inject
+# its email obfuscator script, which slows page rendering.
+footer = false

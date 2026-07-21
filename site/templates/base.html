@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="{{ lang | default(value=config.default_language) }}" data-palette="default">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+  <style>{{ load_data(path="public/style.css") | safe }}</style>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="canonical" href="{% block canonical %}{{ current_url | default(value=config.base_url) | safe }}{% endblock canonical %}">
+  <link rel="preload" as="image" href="{{ get_url(path='images/hero-cropped.webp') }}" imagesrcset="{{ get_url(path='images/hero-cropped-800.webp') }} 800w, {{ get_url(path='images/hero-cropped.webp') }} 1536w" imagesizes="100vw" fetchpriority="high">
+  <meta name="description" content="{% block description %}{{ config.description }}{% endblock description %}">
+  <meta property="og:site_name" content="{{ config.title }}">
+  <meta property="og:title" content="{% block og_title %}{{ config.title }}{% endblock og_title %}">
+  <meta property="og:description" content="{% block og_description %}{{ config.description }}{% endblock og_description %}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock og_type %}">
+  <meta property="og:url" content="{% block og_url %}{{ config.base_url | safe }}{% endblock og_url %}">
+  <meta property="og:image" content="{% block og_image %}{{ config.base_url | safe }}/images/hero.webp{% endblock og_image %}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title %}{{ config.title }}{% endblock twitter_title %}">
+  <meta name="twitter:description" content="{% block twitter_description %}{{ config.description }}{% endblock twitter_description %}">
+  <meta name="twitter:image" content="{% block twitter_image %}{{ config.base_url | safe }}/images/hero.webp{% endblock twitter_image %}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="{{ config.base_url }}{{ <lang_prefix lang={lang} /> }}/" class="site-logo">
+        <span>Teacher</span><span class="logo-accent">Wyatt</span>
+      </a>
+      <nav class="site-nav">
+        <ul>
+          {{ <nav lang={lang} /> }}
+        </ul>
+      </nav>
+      <div class="header-controls">
+        {{ <lang_toggle lang={lang} /> }}
+      </div>
+      <button class="hamburger-btn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-menu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+  <div class="mobile-menu" id="mobile-menu" aria-hidden="true">
+    <nav class="mobile-menu__nav">
+      <ul>
+        {{ <nav lang={lang} /> }}
+      </ul>
+    </nav>
+    <div class="mobile-menu__divider"></div>
+    <div class="mobile-menu__controls">
+      {{ <lang_toggle lang={lang} /> }}
+    </div>
+  </div>
+  {% block banner %}
+  {% set banner_meta = get_image_metadata(path="static/images/hero-cropped.webp") %}
+  <div class="banner-wrap">
+    <img src="{{ get_url(path='images/hero-cropped.webp') }}"
+         srcset="{{ get_url(path='images/hero-cropped-800.webp') }} 800w, {{ get_url(path='images/hero-cropped.webp') }} 1536w"
+         sizes="100vw"
+         width="{{ banner_meta.width }}" height="{{ banner_meta.height }}"
+         alt="{{ config.title }}" class="site-banner" fetchpriority="high">
+  </div>
+  {% endblock banner %}
+  <main>
+    {% block content %}{% endblock content %}
+  </main>
+  <div class="footer-wrap">
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-left">
+          <a href="{{ config.base_url }}{{ <lang_prefix lang={lang} /> }}/" class="site-logo">
+            <span>Teacher</span><span class="logo-accent">Wyatt</span>
+          </a>
+          <p class="footer-tagline">{{ config.description }}</p>
+          <div class="footer-social">
+            {% for link in config.extra.links %}{% if link.disabled or not link.footer %}{% continue %}{% endif %}
+            <a href="{{ link.url }}" aria-label="{{ link.name }}">
+              {{ <link_icon icon={link.icon} size={20} /> }}
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <p class="footer-copy">&copy; {{ now() | date(format="%Y") }} {{ config.title }}. All rights reserved.</p>
+    </footer>
+  </div>
+  <script>
+    (function() {
+      var hamburgerBtn = document.querySelector('.hamburger-btn');
+      var mobileMenu = document.getElementById('mobile-menu');
+      if (!hamburgerBtn || !mobileMenu) return;
+
+      function closeMobileMenu() {
+        mobileMenu.classList.remove('mobile-menu--open');
+        mobileMenu.setAttribute('aria-hidden', 'true');
+        hamburgerBtn.setAttribute('aria-expanded', 'false');
+      }
+
+      hamburgerBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var isOpen = mobileMenu.classList.contains('mobile-menu--open');
+        if (isOpen) {
+          closeMobileMenu();
+        } else {
+          mobileMenu.classList.add('mobile-menu--open');
+          mobileMenu.setAttribute('aria-hidden', 'false');
+          hamburgerBtn.setAttribute('aria-expanded', 'true');
+        }
+      });
+
+      mobileMenu.querySelectorAll('.mobile-menu__nav a').forEach(function(link) {
+        link.addEventListener('click', function() { closeMobileMenu(); });
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!mobileMenu.contains(e.target) && e.target !== hamburgerBtn) {
+          closeMobileMenu();
+        }
+      });
+
+      mobileMenu.addEventListener('click', function(e) { e.stopPropagation(); });
+    })();
+  </script>
+</body>
+</html>

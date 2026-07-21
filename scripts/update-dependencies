@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+trap 'echo >&2 "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+REPO_ROOT="$(pwd)"
+
+# Check (and optionally update) versions of project dependencies.
+# Requires: curl, jq
+
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [options]
+
+Check project dependencies against their latest upstream releases.
+
+Options:
+  -u, --update   Update outdated dependencies in-place
+  -h, --help     Show this help message
+
+Dependencies checked:
+  sveltia-cms    Self-hosted JS bundle in site/static/admin/sveltia-cms.js
+  zola           getzola/zola release in .github/workflows/deploy.yml and scripts/setup
+  GitHub Actions All uses: references in .github/workflows/*.yml
+EOF
+    exit 0
+}
+
+UPDATE=false
+for arg in "$@"; do
+    case "$arg" in
+        -u|--update) UPDATE=true ;;
+        -h|--help)   usage ;;
+        *) echo "Unknown option: $arg" >&2; usage ;;
+    esac
+done
+
+###############################################################################
+# Logging helpers
+###############################################################################
+ok()      { echo >&2 -e "  \033[0;32m✓\033[0m $*"; }
+outdated(){ echo >&2 -e "  \033[0;31m✗\033[0m $*"; }
+updated() { echo >&2 -e "    \033[0;32m↳ updated to $*\033[0m"; }
+heading() { echo >&2 -e "\n\033[1m$*\033[0m"; }
+info()    { echo >&2 -e "\033[0;32m$*\033[0m"; }
+warn()    { echo >&2 -e "\033[0;33m$*\033[0m"; }
+
+has_outdated=0
+has_updated=0
+
+# Fetch the latest GitHub release tag for a given repo.
+# Prefers `gh` CLI (authenticated, higher rate limit) over anonymous curl.
+gh_latest() {
+    local repo=$1
+    if command -v gh &>/dev/null && gh auth status &>/dev/null; then
+        gh api "repos/${repo}/releases/latest" --jq '.tag_name'
+    else
+        curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" \
+            | jq -r '.tag_name'
+    fi
+}
+
+# Fetch the latest npm package version
+npm_latest() {
+    local pkg=$1
+    curl -fsSL "https://registry.npmjs.org/${pkg}/latest" \
+        | jq -r '.version'
+}
+
+# check NAME CURRENT LATEST LOCATION
+# Returns 0 (true) if outdated, 1 (false) if up to date.
+check() {
+    local name=$1 current=$2 latest=$3 location=$4
+
+    # Strip leading 'v' for comparison
+    local cur_cmp="${current#v}"
+    local lat_cmp="${latest#v}"
+
+    if [[ "$cur_cmp" == "$lat_cmp" ]]; then
+        ok "$name $current"
+        return 1  # up to date — no update needed
+    else
+        outdated "$name \033[0;33m$current\033[0m → \033[0;32m$latest\033[0m  ($location)"
+        has_outdated=1
+        return 0  # outdated — update available
+    fi
+}
+
+did_update() {
+    updated "$1"
+    has_updated=1
+}
+
+heading "Checking dependency versions..."
+
+# --- Sveltia CMS (self-hosted JS bundle) ---
+sveltia_file="$REPO_ROOT/site/static/admin/sveltia-cms.js"
+sveltia_current=$(git -C "$REPO_ROOT" log -1 --format=%s \
+    -- site/static/admin/sveltia-cms.js \
+    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+if [[ -z "$sveltia_current" ]]; then
+    sveltia_current="unknown"
+fi
+sveltia_latest=$(npm_latest "@sveltia/cms")
+if check "sveltia-cms" "$sveltia_current" "$sveltia_latest" \
+    "site/static/admin/sveltia-cms.js" && $UPDATE; then
+    echo >&2 -e "    ↳ downloading @sveltia/cms@${sveltia_latest} ...\c"
+    curl -fsSL "https://unpkg.com/@sveltia/cms@${sveltia_latest}/dist/sveltia-cms.js" \
+        -o "$sveltia_file"
+    echo >&2 -e " \033[0;32mdone\033[0m"
+    did_update "$sveltia_latest"
+fi
+
+# --- Zola ---
+deploy_yml="$REPO_ROOT/.github/workflows/deploy.yml"
+setup_script="$REPO_ROOT/scripts/setup"
+zola_current=$(sed -n 's|.*/getzola/zola/releases/download/\([^/]*\)/.*|\1|p' "$deploy_yml" | head -1)
+zola_latest=$(gh_latest "getzola/zola")
+if check "zola" "$zola_current" "$zola_latest" \
+    ".github/workflows/deploy.yml, scripts/setup" && $UPDATE; then
+    for f in "$deploy_yml" "$setup_script"; do
+        sed -i.bak "s|${zola_current}|${zola_latest}|g" "$f"
+        rm -f "${f}.bak"
+    done
+    did_update "$zola_latest"
+fi
+
+# --- GitHub Actions ---
+heading "GitHub Actions:"
+
+# Scan workflow files for action references (parallel arrays for bash 3.2)
+action_names=()
+action_versions=()
+workflow_dir="$REPO_ROOT/.github/workflows"
+while IFS= read -r line; do
+    action=$(echo "$line" | sed -n 's/.*uses: *\([^@]*\)@.*/\1/p')
+    version=$(echo "$line" | sed -n 's/.*uses: *[^@]*@\(v[0-9]*\).*/\1/p')
+    if [[ -n "$action" && -n "$version" ]]; then
+        # Deduplicate: skip if already seen
+        already=false
+        for existing in "${action_names[@]+"${action_names[@]}"}"; do
+            if [[ "$existing" == "$action" ]]; then
+                already=true
+                break
+            fi
+        done
+        if ! $already; then
+            action_names+=("$action")
+            action_versions+=("$version")
+        fi
+    fi
+done < <(grep -rh 'uses:' "$workflow_dir" | grep -v '#')
+
+# Sort by action name via index
+sorted_indices=()
+if [[ ${#action_names[@]} -gt 0 ]]; then
+    while IFS= read -r idx; do
+        sorted_indices+=("$idx")
+    done < <(
+        for i in $(seq 0 $((${#action_names[@]} - 1))); do
+            echo "$i ${action_names[$i]}"
+        done | sort -k2 | while read -r idx _; do echo "$idx"; done
+    )
+fi
+
+for i in "${sorted_indices[@]+"${sorted_indices[@]}"}"; do
+    action="${action_names[$i]}"
+    current="${action_versions[$i]}"
+    latest=$(gh_latest "$action" | grep -oE '^v?[0-9]+' | head -1)
+    cur_num="${current#v}"
+    lat_num="${latest#v}"
+    if [[ "$cur_num" == "$lat_num" ]]; then
+        ok "$action $current"
+    else
+        outdated "$action \033[0;33m$current\033[0m → \033[0;32m$latest\033[0m"
+        has_outdated=1
+        if $UPDATE; then
+            # Update all workflow files that reference this action
+            for f in "$workflow_dir"/*.yml; do
+                if grep -q "uses: *${action}@" "$f"; then
+                    sed -i.bak "s|uses: *${action}@${current}|uses: ${action}@${latest}|" "$f"
+                    rm -f "${f}.bak"
+                fi
+            done
+            did_update "$latest"
+        fi
+    fi
+done
+
+echo ""
+if [[ $has_updated -eq 1 ]]; then
+    info "Dependencies updated. Review changes and test before committing."
+elif [[ $has_outdated -eq 0 ]]; then
+    info "All dependencies are up to date."
+else
+    warn "Some dependencies have newer versions available. Run with --update to update them."
+fi

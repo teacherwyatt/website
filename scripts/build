@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+trap 'echo >&2 "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# Default to a root-relative base URL ("/") so the built site can be opened
+# from a local web server (e.g. `python3 -m http.server --directory
+# site/public`) without every link pointing back at the production domain.
+#
+# The deploy workflow overrides this by passing --base-url with the real
+# production URL, which is required so that absolute URLs in <meta> tags
+# (og:url, og:image, twitter:image, canonical, RSS, sitemap) point at the
+# live site — social-media scrapers and search engines need fully-qualified
+# URLs and will not resolve "/foo" against the page they fetched.
+if [[ $# -eq 0 ]]; then
+  set -- --base-url /
+fi
+zola --root site build "$@"

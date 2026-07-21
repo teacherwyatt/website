@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ section.title }} | {{ config.title }}{% endblock title %}
+
+{% block content %}
+<div class="blog-page-wrap">
+  <div class="blog-header">
+    <h1>{{ section.title }}</h1>
+    <p>{% if lang == "es" %}Libros que recomiendo para aprender inglés y español{% else %}Books I love for learning English & Spanish{% endif %}</p>
+  </div>
+  <div class="blog-grid">
+    {% for page in paginator.pages %}
+    {% if page.description %}
+    <article class="post-card post-card--grid">
+      {% if page.extra.hero_image %}
+        {% set hero = page.extra.hero_image %}
+      {% else %}
+        {% set hero = "/images/blog/_default-post.webp" %}
+      {% endif %}
+      <a href="{{ page.permalink }}" class="post-card-img-link">
+        {% set img_tiny = <blog_img hero={hero} width={240} /> %}
+        {% set img_small = <blog_img hero={hero} width={400} /> %}
+        {% set img_medium = <blog_img hero={hero} width={800} /> %}
+        <img src="{{ img_small }}"
+             srcset="{{ img_tiny }} 240w, {{ img_small }} 400w, {{ img_medium }} 800w"
+             sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+             alt="{{ page.title }}" class="post-card-img" width="400" height="225">
+      </a>
+      <div class="post-card-content">
+        <a href="{{ page.permalink }}" class="post-card-title-link">
+          <h2>{{ page.title }}</h2>
+        </a>
+        {% if page.description %}
+        <p>{{ page.description }}</p>
+        {% endif %}
+        <div class="post-card-meta">
+          <time datetime="{{ page.date }}">{{ page.date | date(format="%b %d, %Y") }}</time>
+          <a href="{{ page.permalink }}" class="read-more">
+            Read More
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </article>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {{ <pagination paginator={paginator} base="/blog/page/" /> }}
+</div>
+{% endblock content %}

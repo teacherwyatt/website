@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+trap 'echo >&2 "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+SCRAPE_DIR="$SCRIPT_DIR/scrape"
+cd "$SCRAPE_DIR"
+
+# One-time scrape of Kristin's Facebook Page into tmp/fb-export/.
+#
+# This opens a real browser you log into once (the profile is saved under
+# tmp/fb-profile so re-runs skip login). It then scrolls the Page and saves
+# raw HTML, screenshots, images, and a best-effort posts.json. See
+# scrape-facebook.mjs for details.
+#
+# Usage:
+#   scripts/scrape-facebook [pageUrl]
+#
+# Requirements: node (installed). Playwright + its Chromium are installed on
+# first run into scripts/scrape/node_modules (git-ignored).
+
+if [[ ! -d node_modules/playwright ]]; then
+  echo >&2 "Installing Playwright (first run only) ..."
+  if command -v pnpm >/dev/null 2>&1; then
+    pnpm install
+  else
+    npm install
+  fi
+  echo >&2 "Installing Chromium browser for Playwright ..."
+  npx playwright install chromium
+fi
+
+exec node scrape-facebook.mjs "$@"

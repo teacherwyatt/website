@@ -1,0 +1,10 @@
+{
+  "name": "teacherwyatt-scrape",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "One-time Playwright scrape of Kristin's Facebook page into tmp/fb-export/",
+  "dependencies": {
+    "playwright": "^1.50.0"
+  }
+}

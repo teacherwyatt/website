@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy-site:
+    name: Build & deploy site
+    # Only deploy from the teacherwyatt account's copy of the repo; pushes to
+    # mirrors/forks (e.g. the webcoyote backup) skip the job instead of failing
+    # or deploying over the live site.
+    if: github.repository_owner == 'teacherwyatt'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      deployments: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Zola
+        run: |
+          curl -fsSL https://github.com/getzola/zola/releases/download/v0.23.6/zola-v0.23.6-x86_64-unknown-linux-gnu.tar.gz \
+            | tar xz -C /usr/local/bin zola
+
+      - name: Build site
+        # scripts/build defaults to a root-relative base URL for local
+        # testing; deploys must override that with the production URL so
+        # that absolute URLs in <meta> tags (og:url, og:image, canonical,
+        # RSS, sitemap) point at the live site — social scrapers and
+        # search engines require fully-qualified URLs.
+        run: scripts/build --base-url https://teacherwyatt.pages.dev
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/public --project-name=teacherwyatt
+

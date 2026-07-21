@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} | {{ config.title }}{% endblock title %}
+
+{% block banner %}
+{% set banner_meta = get_image_metadata(path="static/images/hero.webp") %}
+<div class="banner-wrap banner-wrap--full">
+  <img src="{{ get_url(path='images/hero.webp') }}"
+       srcset="{{ get_url(path='images/hero-800.webp') }} 800w, {{ get_url(path='images/hero.webp') }} 1536w"
+       sizes="100vw"
+       width="{{ banner_meta.width }}" height="{{ banner_meta.height }}"
+       alt="{{ config.title }}" class="site-banner site-banner--full" fetchpriority="high">
+</div>
+{% endblock banner %}
+
+{% block content %}
+{% set photo = page.extra.photo | default(value="/images/hero.webp") %}
+{% set photo_path = "static" ~ photo %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Kristin Wyatt",
+  "url": "{{ config.base_url | safe }}/about",
+  "image": "{{ config.base_url | safe }}{{ photo }}",
+  "sameAs": [
+    {% for link in config.extra.links %}{% if link.disabled %}{% continue %}{% endif %}{% if not loop.first %}, {% endif %}"{{ link.url }}"{% endfor %}
+  ]
+}
+</script>
+<div class="prose">
+<article>
+  <h1>{{ page.title }}</h1>
+  {% set author_meta = get_image_metadata(path=photo_path) %}
+  <img src="{{ photo }}" alt="{{ config.title }}" class="author-photo" width="{{ author_meta.width }}" height="{{ author_meta.height }}">
+  {{ page.content | safe }}
+
+  {% if config.extra.links %}
+  <h2>{% if lang == "es" %}Encuéntrame online{% else %}Find me online{% endif %}</h2>
+  <ul class="about-links">
+    {% for link in config.extra.links %}{% if link.disabled %}{% continue %}{% endif %}
+    <li>
+      <a href="{{ link.url }}" class="about-link">
+        {{ <link_icon icon={link.icon} size={24} /> }}
+        {{ link.name }}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</article>
+</div>
+{% endblock content %}

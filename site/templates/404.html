@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}404 Not Found | {{ config.title }}{% endblock title %}
+
+{% block content %}
+<div class="prose">
+  <article>
+    <h1>404 Page Not Found</h1>
+    {% set img_404_meta = get_image_metadata(path="static/images/404.webp") %}
+    <img src="{{ get_url(path='images/404.webp') }}" alt="You are here -- lost" width="{{ img_404_meta.width }}" height="{{ img_404_meta.height }}" style="width:100%;height:auto;border-radius:4px;margin-bottom:1.5rem;">
+    <p>This page doesn't exist.</p>
+    <p>Either you're lost, or I need to fire the web developer. Oh wait&mdash;that's me.</p>
+    <p><a href="{{ config.base_url }}">Take me home</a></p>
+  </article>
+</div>
+{% endblock content %}

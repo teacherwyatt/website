@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    {%- for entry in entries %}
+    {%- if entry.permalink is ending_with(pat="/about/") or entry.permalink is ending_with(pat="/blog/") or entry.permalink is ending_with(pat="/projects/") or entry.permalink is ending_with(pat="/bits/") or entry.permalink is ending_with(pat="/library/") or entry.permalink | split(pat="://") | last | split(pat="/") | length == 2 %}
+    <url>
+        <loc>{{ entry.permalink | escape_xml | safe }}</loc>
+        <lastmod>{% if entry.date %}{{ entry.date | date(format="%Y-%m-%dT%H:%M:%S+00:00") }}{% else %}{{ now() | date(format="%Y-%m-%dT%H:%M:%S+00:00") }}{% endif %}</lastmod>
+    </url>
+    {%- endif %}
+    {%- endfor %}
+</urlset>

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} | {{ config.title }}{% endblock title %}
+{% block description %}{% if page.description %}{{ page.description }}{% else %}Game design, programming and more{% endif %}{% endblock description %}
+{% block og_title %}{{ page.title }}{% endblock og_title %}
+{% block og_description %}{% if page.description %}{{ page.description }}{% else %}Game design, programming and more{% endif %}{% endblock og_description %}
+{% block og_type %}article{% endblock og_type %}
+{% block og_url %}{{ page.permalink | safe }}{% endblock og_url %}
+{% block og_image %}{% if page.extra.hero_image and not page.extra.hero_image is containing(pat="_default-") %}{% set p = "static" ~ page.extra.hero_image %}{% set m = get_image_metadata(path=p) %}{% set i = resize_image(path=p, width=m.width, height=m.height, op="scale", format="webp", quality=85) %}{{ config.base_url | safe }}{{ i.url | safe }}{% elif page.description %}{{ config.base_url | safe }}/images/hero.webp{% endif %}{% endblock og_image %}
+{% block twitter_title %}{{ page.title }}{% endblock twitter_title %}
+{% block twitter_description %}{% if page.description %}{{ page.description }}{% else %}Game design, programming and more{% endif %}{% endblock twitter_description %}
+{% block twitter_image %}{% if page.extra.hero_image and not page.extra.hero_image is containing(pat="_default-") %}{% set p = "static" ~ page.extra.hero_image %}{% set m = get_image_metadata(path=p) %}{% set i = resize_image(path=p, width=m.width, height=m.height, op="scale", format="webp", quality=85) %}{{ config.base_url | safe }}{{ i.url | safe }}{% elif page.description %}{{ config.base_url | safe }}/images/hero.webp{% endif %}{% endblock twitter_image %}
+
+{% block content %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": {{ page.title | json_encode() | safe }},
+  "url": "{{ page.permalink | safe }}",
+  "datePublished": "{{ page.date }}",
+  {% if page.updated %}"dateModified": "{{ page.updated }}",{% endif %}
+  {% if page.description %}"description": {{ page.description | json_encode() | safe }},{% endif %}
+  {% if page.extra.hero_image %}{% set ld_path = "static" ~ page.extra.hero_image %}{% set ld_meta = get_image_metadata(path=ld_path) %}{% set ld_img = resize_image(path=ld_path, width=ld_meta.width, height=ld_meta.height, op="scale", format="webp", quality=85) %}"image": "{{ config.base_url | safe }}{{ ld_img.url | safe }}",{% endif %}
+  "author": {
+    "@type": "Person",
+    "name": "Kristin Wyatt",
+    "url": "{{ config.base_url | safe }}{{ <lang_prefix lang={lang} /> }}/about"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "{{ config.title }}",
+    "url": "{{ config.base_url | safe }}"
+  }
+}
+</script>
+<div class="prose">
+  <article>
+    <h1 style="margin-bottom: 0">{{ page.title }}</h1>
+    <time datetime="{{ page.date }}" class="post-date" data-iso="{{ page.date }}">{{ page.date | date(format="%B %d, %Y") }}</time>
+    {% if page.extra.hero_image %}
+    {% set hero_path = "static" ~ page.extra.hero_image %}
+    {% set hero_meta = get_image_metadata(path=hero_path) %}
+    {% set hero_img = resize_image(path=hero_path, width=hero_meta.width, height=hero_meta.height, op="scale", format="webp", quality=85) %}
+    <div><img src="{{ hero_img.url }}" alt="{{ page.title }}" width="{{ hero_meta.width }}" height="{{ hero_meta.height }}"></div>
+    {% endif %}
+    {{ page.content | safe }}
+  </article>
+
+  <script>
+    // Show recent post dates in human-readable relative format
+    (function() {
+      var el = document.querySelector('time.post-date[data-iso]');
+      if (!el) return;
+      var seconds = Math.floor((Date.now() - new Date(el.getAttribute('data-iso')).getTime()) / 1000);
+      if (seconds < 60) el.textContent = 'just now';
+      else if (seconds < 3600) el.textContent = Math.floor(seconds / 60) + 'm ago';
+      else if (seconds < 86400) el.textContent = Math.floor(seconds / 3600) + 'h ago';
+      else if (seconds < 2592000) el.textContent = Math.floor(seconds / 86400) + 'd ago';
+    })();
+  </script>
+</div>
+
+{# Prev/next within the Blog section, for the current language. #}
+{% if lang and lang != config.default_language %}
+  {% set root = get_section(path="blog/_index." ~ lang ~ ".md") %}
+{% else %}
+  {% set root = get_section(path="blog/_index.md") %}
+{% endif %}
+{% set_global newer = false %}
+{% set_global older = false %}
+{% set_global found = false %}
+{% set_global prev = false %}
+{% for p in root.pages %}
+  {% if p.extra.unlisted %}{% continue %}{% endif %}
+  {% if found and not older %}
+    {% set_global older = p %}
+  {% endif %}
+  {% if p.path == page.path %}
+    {% set_global found = true %}
+    {% set_global newer = prev %}
+  {% endif %}
+  {% set_global prev = p %}
+{% endfor %}
+{% if newer or older %}
+<section class="post-nav-section">
+  <nav class="post-nav" aria-label="More posts">
+    <div class="post-nav__grid">
+      {% if newer %}
+      {% set n = newer %}
+      {% if n.extra.hero_image %}{% set hero = n.extra.hero_image %}{% else %}{% set hero = "/images/blog/_default-post.webp" %}{% endif %}
+      <article class="post-card post-nav__card">
+        <div class="post-nav__label">&larr; Newer post</div>
+        <a href="{{ n.permalink }}" class="post-card-img-link">
+          {% set img_tiny = <blog_img hero={hero} width={400} /> %}
+          {% set img_small = <blog_img hero={hero} width={800} /> %}
+          {% set img_medium = <blog_img hero={hero} width={1200} /> %}
+          <img src="{{ img_small }}"
+               srcset="{{ img_tiny }} 400w, {{ img_small }} 800w, {{ img_medium }} 1200w"
+               sizes="(max-width: 600px) 100vw, 50vw"
+               alt="{{ n.title }}" class="post-card-img" width="800" height="450">
+        </a>
+        <div class="post-card-content">
+          <time class="post-card-meta" datetime="{{ n.date }}">{{ n.date | date(format="%b %d, %Y") }}</time>
+          <a href="{{ n.permalink }}" class="post-card-title-link"><h2>{{ n.title }}</h2></a>
+          {% if n.description %}<p>{{ n.description }}</p>{% endif %}
+        </div>
+      </article>
+      {% else %}
+      <div class="post-nav__card post-nav__card--empty" aria-hidden="true"></div>
+      {% endif %}
+
+      {% if older %}
+      {% set o = older %}
+      {% if o.extra.hero_image %}{% set hero = o.extra.hero_image %}{% else %}{% set hero = "/images/blog/_default-post.webp" %}{% endif %}
+      <article class="post-card post-nav__card post-nav__card--older">
+        <div class="post-nav__label">Older post &rarr;</div>
+        <a href="{{ o.permalink }}" class="post-card-img-link">
+          {% set img_tiny = <blog_img hero={hero} width={400} /> %}
+          {% set img_small = <blog_img hero={hero} width={800} /> %}
+          {% set img_medium = <blog_img hero={hero} width={1200} /> %}
+          <img src="{{ img_small }}"
+               srcset="{{ img_tiny }} 400w, {{ img_small }} 800w, {{ img_medium }} 1200w"
+               sizes="(max-width: 600px) 100vw, 50vw"
+               alt="{{ o.title }}" class="post-card-img" width="800" height="450">
+        </a>
+        <div class="post-card-content">
+          <time class="post-card-meta" datetime="{{ o.date }}">{{ o.date | date(format="%b %d, %Y") }}</time>
+          <a href="{{ o.permalink }}" class="post-card-title-link"><h2>{{ o.title }}</h2></a>
+          {% if o.description %}<p>{{ o.description }}</p>{% endif %}
+        </div>
+      </article>
+      {% else %}
+      <div class="post-nav__card post-nav__card--empty" aria-hidden="true"></div>
+      {% endif %}
+    </div>
+  </nav>
+</section>
+{% endif %}
+{% endblock content %}

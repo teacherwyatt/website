@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Create the Cloudflare Pages project (Direct Upload; CI deploys via wrangler).
+#
+# Idempotent: if the project already exists, prints its URL and exits.
+#
+# Required env:
+#   CLOUDFLARE_API_TOKEN        - token with Account:Cloudflare Pages:Edit
+#   CLOUDFLARE_ACCOUNT_ID
+#   CLOUDFLARE_PAGES_PROJECT    - e.g. "teacherwyatt"
+set -Eeuo pipefail
+trap 'echo >&2 "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+
+: "${CLOUDFLARE_API_TOKEN:?must be set}"
+: "${CLOUDFLARE_ACCOUNT_ID:?must be set}"
+: "${CLOUDFLARE_PAGES_PROJECT:?must be set}"
+
+command -v jq >/dev/null || { echo >&2 "jq not installed"; exit 1; }
+
+API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects"
+AUTH=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+
+echo "Checking for Pages project $CLOUDFLARE_PAGES_PROJECT ..."
+RESP=$(curl -sS "${AUTH[@]}" "$API/$CLOUDFLARE_PAGES_PROJECT")
+
+if [[ "$(jq -r .success <<<"$RESP")" != "true" ]]; then
+  # 8000007 = "Project not found"; anything else (bad token, wrong account) is fatal.
+  if ! jq -e '.errors | any(.code == 8000007)' <<<"$RESP" >/dev/null; then
+    echo >&2 "Error from Cloudflare API (get project):"
+    jq >&2 . <<<"$RESP"
+    exit 1
+  fi
+
+  echo "Creating Pages project $CLOUDFLARE_PAGES_PROJECT ..."
+  PAYLOAD=$(jq -n --arg name "$CLOUDFLARE_PAGES_PROJECT" \
+    '{ name: $name, production_branch: "main" }')
+  RESP=$(curl -sS -X POST "${AUTH[@]}" "$API" -d "$PAYLOAD")
+  if [[ "$(jq -r .success <<<"$RESP")" != "true" ]]; then
+    echo >&2 "Error from Cloudflare API (create project):"
+    jq >&2 . <<<"$RESP"
+    exit 1
+  fi
+fi
+
+# pages.dev subdomains are global; if the name was taken, Cloudflare appends a
+# suffix. Every hard-coded URL in the repo assumes <project>.pages.dev exactly.
+SUBDOMAIN=$(jq -r .result.subdomain <<<"$RESP")
+echo "Project URL: https://$SUBDOMAIN"
+if [[ "$SUBDOMAIN" != "$CLOUDFLARE_PAGES_PROJECT.pages.dev" ]]; then
+  echo >&2 "WARNING: subdomain is $SUBDOMAIN, not $CLOUDFLARE_PAGES_PROJECT.pages.dev."
+  echo >&2 "Update the base URLs listed in SETUP.md to match before deploying."
+fi

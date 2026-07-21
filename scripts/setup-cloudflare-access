@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Create (or update) a Cloudflare Access application + policy that locks down
+# *.teacherwyatt.pages.dev so the raw Pages hostnames aren't publicly reachable.
+#
+# Idempotent: safe to re-run. Reads config from the environment (via .envrc).
+#
+# Required env:
+#   CLOUDFLARE_API_TOKEN    - token with Access: Apps and Policies:Edit
+#   CLOUDFLARE_ACCOUNT_ID
+#   ACCESS_ALLOWED_EMAILS   - comma-separated emails allowed through Access
+set -Eeuo pipefail
+trap 'echo >&2 "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+
+: "${CLOUDFLARE_API_TOKEN:?must be set}"
+: "${CLOUDFLARE_ACCOUNT_ID:?must be set}"
+: "${ACCESS_ALLOWED_EMAILS:?must be set}"
+
+API="https://api.cloudflare.com/client/v4"
+AUTH=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+
+APP_NAME="teacherwyatt pages lockdown"
+# Protect both the project hostname and any deployment preview hostnames.
+DOMAINS=(teacherwyatt.pages.dev '*.teacherwyatt.pages.dev')
+# Any app already claiming one of these domains will be adopted and updated
+# (Cloudflare Pages auto-creates one named "<project> - Cloudflare Pages"
+# covering *.pages.dev when you enable Access in the Pages dashboard).
+
+cf() {
+  local method="$1" path="$2" body="${3:-}"
+  if [[ -n "$body" ]]; then
+    curl -sS -X "$method" "${AUTH[@]}" "$API$path" -d "$body"
+  else
+    curl -sS -X "$method" "${AUTH[@]}" "$API$path"
+  fi
+}
+
+require_success() {
+  local resp="$1" label="$2"
+  if [[ "$(jq -r .success <<<"$resp")" != "true" ]]; then
+    echo >&2 "Error from Cloudflare API ($label):"
+    jq >&2 . <<<"$resp"
+    exit 1
+  fi
+}
+
+# Build the JSON app body. Cloudflare Access accepts a primary `domain` plus
+# additional `self_hosted_domains`, and Pages hostnames must be declared as a
+# "self_hosted" application.
+read -r -d '' APP_BODY <<JSON || true
+{
+  "name": $(jq -Rn --arg v "$APP_NAME" '$v'),
+  "type": "self_hosted",
+  "domain": "${DOMAINS[0]}",
+  "self_hosted_domains": $(jq -cn --args '$ARGS.positional' --args "${DOMAINS[@]}"),
+  "session_duration": "24h",
+  "app_launcher_visible": false
+}
+JSON
+
+echo "Checking for existing Access application covering the pages.dev domains ..."
+LIST=$(cf GET "/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps")
+require_success "$LIST" "list apps"
+# Match by domain overlap rather than name: Cloudflare won't let two apps
+# claim the same destination, so if anything already covers one of our
+# target domains we must adopt and update it in place.
+APP_ID=$(jq -r --args '
+  .result[]
+  | select(
+      ([.domain] + (.self_hosted_domains // []))
+      | any(. as $d | $ARGS.positional | index($d))
+    )
+  | .id
+' <<<"$LIST" -- "${DOMAINS[@]}" | head -n1)
+
+if [[ -n "$APP_ID" ]]; then
+  echo "Updating existing app $APP_ID ..."
+  RESP=$(cf PUT "/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps/$APP_ID" "$APP_BODY")
+  require_success "$RESP" "update app"
+else
+  echo "Creating new Access application ..."
+  RESP=$(cf POST "/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps" "$APP_BODY")
+  require_success "$RESP" "create app"
+  APP_ID=$(jq -r .result.id <<<"$RESP")
+fi
+echo "App id: $APP_ID"
+
+# Policy: allow only the configured emails. We own the policy named
+# $POLICY_NAME and rewrite its email list on every run, so removing an address
+# from ACCESS_ALLOWED_EMAILS revokes it. Other policies on the app are left
+# alone (Cloudflare Pages auto-creates "Allow Members - Cloudflare Pages" when
+# you enable Access in the Pages UI, and we don't want to fight it).
+POLICY_NAME="Allow site viewers"
+INCLUDE=$(jq -c -R 'split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != ""))
+  | map({ email: { email: . } })' <<<"$ACCESS_ALLOWED_EMAILS")
+
+PLIST=$(cf GET "/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps/$APP_ID/policies")
+require_success "$PLIST" "list policies"
+POLICY=$(jq -c --arg name "$POLICY_NAME" '[.result[] | select(.name == $name)][0] // empty' <<<"$PLIST")
+
+if [[ -n "$POLICY" ]]; then
+  POLICY_ID=$(jq -r .id <<<"$POLICY")
+  PRECEDENCE=$(jq .precedence <<<"$POLICY")
+else
+  # Pick a precedence higher than any existing policy to avoid the
+  # "policy precedences must be unique" API error.
+  PRECEDENCE=$(jq '[.result[].precedence // 0] | (max // 0) + 1' <<<"$PLIST")
+fi
+
+POLICY_BODY=$(jq -n --arg name "$POLICY_NAME" --argjson precedence "$PRECEDENCE" \
+  --argjson include "$INCLUDE" \
+  '{ name: $name, decision: "allow", precedence: $precedence, include: $include }')
+
+if [[ -n "$POLICY" ]]; then
+  echo "Updating policy $POLICY_ID ..."
+  RESP=$(cf PUT "/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps/$APP_ID/policies/$POLICY_ID" "$POLICY_BODY")
+  require_success "$RESP" "update policy"
+else
+  echo "Creating policy at precedence $PRECEDENCE ..."
+  RESP=$(cf POST "/accounts/$CLOUDFLARE_ACCOUNT_ID/access/apps/$APP_ID/policies" "$POLICY_BODY")
+  require_success "$RESP" "create policy"
+fi
+
+echo "Done. Allowed through Access on teacherwyatt.pages.dev and *.teacherwyatt.pages.dev:"
+jq -r '.[].email.email | "  " + .' <<<"$INCLUDE"
+echo "Everyone else hits the Access login."

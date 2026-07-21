@@ -1,0 +1,133 @@
+{# --- Navigation & language helpers ---------------------------------------- #}
+
+{# Language prefix for a given lang: "" for the default (en), "/es" for others. #}
+{% component lang_prefix(lang, @config) %}{%- if lang and lang != config.default_language -%}/{{ lang }}{%- endif -%}{% endcomponent lang_prefix %}
+
+{# The site nav, rendered for the active language. Homepage sections are anchor
+   links (Alchemy-style); Blog is a forward link to its own page. #}
+{% component nav(lang, @config) %}
+{%- set p = <lang_prefix lang={lang} /> -%}
+{%- if lang == "es" -%}
+  {%- set home = "Inicio" -%}{%- set about = "Sobre mí" -%}{%- set langs = "Clases" -%}
+  {%- set price = "Precios" -%}{%- set reviews = "Opiniones" -%}{%- set books = "Blog" -%}
+  {%- set contact = "Contacto" -%}
+{%- else -%}
+  {%- set home = "Home" -%}{%- set about = "About" -%}{%- set langs = "Lessons" -%}
+  {%- set price = "Pricing" -%}{%- set reviews = "Reviews" -%}{%- set books = "Blog" -%}
+  {%- set contact = "Contact" -%}
+{%- endif -%}
+<li><a href="{{ config.base_url }}{{ p }}/#lessons">{{ langs }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/#pricing">{{ price }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/#reviews">{{ reviews }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/#about">{{ about }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/#contact">{{ contact }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/blog">{{ books }}</a></li>
+{%- if config.base_url is starting_with(pat="http://127.0.0.1") or config.base_url is starting_with(pat="http://localhost") -%}
+<li><a href="/admin">Admin</a></li>
+{%- endif -%}
+{% endcomponent nav %}
+
+{# Language toggle: links to the same page in each language. `current_path` is
+   Zola's path for the active page (e.g. "/es/blog/"). We derive the base path
+   (without any language prefix) and re-prefix it for each language so the
+   toggle lands on the twin page rather than always the homepage. #}
+{% component lang_toggle(lang, @config, @current_path = "/") %}
+{%- set cur = current_path -%}
+{# Strip a leading non-default-language prefix ("/es") to get the language-neutral
+   base path, so each toggle link lands on the twin page. When adding a new
+   language, add its prefix to `known` below. #}
+{%- set known = ["es"] -%}
+{%- set base = cur -%}
+{%- for l in known -%}
+  {%- if cur == "/" ~ l or cur == "/" ~ l ~ "/" -%}
+    {%- set_global base = "/" -%}
+  {%- elif cur is starting_with(pat="/" ~ l ~ "/") -%}
+    {%- set_global base = cur | trim_start(pat="/" ~ l) -%}
+  {%- endif -%}
+{%- endfor -%}
+<div class="lang-toggle" role="group" aria-label="Language">
+  <a href="{{ config.base_url }}{{ base }}"{% if lang == config.default_language %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>EN</a>
+  <span class="lang-toggle__sep" aria-hidden="true">·</span>
+  <a href="{{ config.base_url }}/es{{ base }}"{% if lang == "es" %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>ES</a>
+</div>
+{% endcomponent lang_toggle %}
+
+{# Resize a /images/blog/... path and return the URL at the requested width. #}
+{% component blog_img(hero, width) %}
+{%- set rel = hero | trim_start(pat="/") -%}
+{%- set src = "static/" ~ rel -%}
+{%- set img = resize_image(path=src, width=width, op="fit_width", format="webp", quality=85) -%}
+{{- img.url -}}
+{% endcomponent blog_img %}
+
+{% component pagination(paginator, base) %}
+{% if paginator.number_pagers > 1 %}
+{% set cur = paginator.current_index %}
+{% set total = paginator.number_pagers %}
+{# Compute window start: center cur in a 10-wide window, clamped to [1, total-9] #}
+{% set raw_start = cur - 5 %}
+{% set win_start = 1 %}
+{% if raw_start > 1 %}{% set win_start = raw_start %}{% endif %}
+{% set raw_end = win_start + 9 %}
+{% set win_end = raw_end %}
+{% if raw_end > total %}{% set win_end = total %}{% endif %}
+{# Shift start left if window is too small at the end #}
+{% set adj_start = win_end - 9 %}
+{% if adj_start > 1 %}{% set win_start = adj_start %}{% else %}{% set win_start = 1 %}{% endif %}
+{# Previous/next group targets #}
+{# Jump by 10 only when there are more pages beyond the current window #}
+{% set prev_group = cur - 10 %}
+{% set next_group = cur + 10 %}
+{% set next_step = cur + 1 %}
+{% set prev_step = cur - 1 %}
+<nav class="pagination" aria-label="Page navigation">
+  {% if cur > 1 %}
+  <a href="{{ base }}1/" class="pagination-btn" aria-label="First page">&laquo;</a>
+  {% if prev_group >= 1 %}<a href="{{ base }}{{ prev_group }}/" class="pagination-btn" aria-label="Previous 10 pages">&lsaquo;</a>{% else %}<a href="{{ base }}{{ prev_step }}/" class="pagination-btn" aria-label="Previous 10 pages">&lsaquo;</a>{% endif %}
+  {% else %}
+  <span class="pagination-btn pagination-btn--disabled" aria-disabled="true">&laquo;</span>
+  <span class="pagination-btn pagination-btn--disabled" aria-disabled="true">&lsaquo;</span>
+  {% endif %}
+  {% for i in range(start=win_start, end=win_end + 1) %}
+  {% if i == cur %}
+  <span class="pagination-btn pagination-btn--current" aria-current="page">{{ i }}</span>
+  {% else %}
+  <a href="{{ base }}{{ i }}/" class="pagination-btn">{{ i }}</a>
+  {% endif %}
+  {% endfor %}
+  {% if cur < total %}
+  {% if next_group <= total %}<a href="{{ base }}{{ next_group }}/" class="pagination-btn" aria-label="Next 10 pages">&rsaquo;</a>{% else %}<a href="{{ base }}{{ next_step }}/" class="pagination-btn" aria-label="Next 10 pages">&rsaquo;</a>{% endif %}
+  <a href="{{ base }}{{ total }}/" class="pagination-btn" aria-label="Last page">&raquo;</a>
+  {% else %}
+  <span class="pagination-btn pagination-btn--disabled" aria-disabled="true">&rsaquo;</span>
+  <span class="pagination-btn pagination-btn--disabled" aria-disabled="true">&raquo;</span>
+  {% endif %}
+</nav>
+{% endif %}
+{% endcomponent %}
+
+{% component link_icon(icon, size) %}
+{% if icon == "bluesky" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.204-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z"/></svg>
+{% elif icon == "facebook" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+{% elif icon == "email" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+{% elif icon == "github" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+{% elif icon == "imdb" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14.31 9.588v.005c-.077-.048-.227-.07-.42-.07v4.815c.27 0 .44-.06.5-.165.062-.104.095-.405.095-.91V10.6c0-.405-.017-.665-.05-.775a.396.396 0 0 0-.125-.237zM3.04 9.54H2.5v4.93h.545c.21 0 .36-.025.435-.08.08-.053.13-.14.155-.268.024-.127.034-.44.034-.93v-2.35c0-.51-.006-.83-.024-.97a.45.45 0 0 0-.15-.268.57.57 0 0 0-.455-.064zm18.92-6.54H2.04C.914 3 0 3.914 0 5.04v13.92C0 20.086.914 21 2.04 21h19.92C23.086 21 24 20.086 24 18.96V5.04C24 3.914 23.086 3 21.96 3zM6.734 15.5H5.026V8.5h1.708v7zm4.46 0H9.636v-4.867l-.67 4.867H7.89l-.696-4.73V15.5H5.636V8.5h2.34s.43 2.858.51 3.87L9.1 8.5h2.094v7zm4.18-.7c0 .376-.04.637-.106.792a.795.795 0 0 1-.345.408c-.165.1-.38.155-.656.17-.198.01-.578.014-1.15.014h-1.49V8.5h1.404c.61 0 1.003.016 1.175.05.258.05.462.155.613.317.15.162.248.363.29.61.04.244.064.67.064 1.275v3.473c.002.33.002.524.002.575zm4.154-.595c0 .49-.033.844-.098 1.063a.965.965 0 0 1-.377.526c-.185.13-.402.207-.654.228-.17.016-.538.023-1.1.023h-1.764V8.5h1.635c.613 0 1.014.025 1.205.073.283.07.506.208.67.41.163.203.268.435.313.698.047.264.07.687.07 1.27v3.254h.1z"/></svg>
+{% elif icon == "linkedin" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+{% elif icon == "mastodon" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.268 5.313c-.35-2.578-2.617-4.61-5.304-5.004C17.51.242 15.792 0 11.813 0h-.03c-3.98 0-4.835.242-5.288.309C3.882.692 1.496 2.518.917 5.127.64 6.412.61 7.837.661 9.143c.074 1.874.088 3.745.26 5.611.118 1.24.325 2.47.62 3.68.55 2.237 2.777 4.098 4.96 4.857 2.336.792 4.849.923 7.256.38.265-.061.527-.132.786-.213.585-.184 1.27-.39 1.774-.753a.057.057 0 0 0 .023-.043v-1.809a.052.052 0 0 0-.02-.041.053.053 0 0 0-.046-.01 20.282 20.282 0 0 1-4.709.545c-2.73 0-3.463-1.284-3.674-1.818a5.593 5.593 0 0 1-.319-1.433.053.053 0 0 1 .066-.054c1.517.363 3.072.546 4.632.546.376 0 .75 0 1.125-.01 1.57-.044 3.224-.124 4.768-.422.038-.008.077-.015.11-.024 2.435-.464 4.753-1.92 4.989-5.604.008-.145.03-1.52.03-1.67.002-.512.167-3.63-.024-5.545zm-3.748 9.195h-2.561V8.29c0-1.309-.55-1.976-1.67-1.976-1.23 0-1.846.79-1.846 2.35v3.403h-2.546V8.663c0-1.56-.617-2.35-1.848-2.35-1.112 0-1.668.668-1.67 1.977v6.218H4.822V8.102c0-1.31.337-2.35 1.011-3.12.696-.77 1.608-1.164 2.74-1.164 1.311 0 2.302.5 2.962 1.498l.638 1.06.638-1.06c.66-.999 1.65-1.498 2.96-1.498 1.13 0 2.043.395 2.74 1.164.675.77 1.012 1.81 1.012 3.12z"/></svg>
+{% elif icon == "mobygames" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm1.5 4.5h3v3h3v-3h3v11h-3v-5h-3v5h-3z"/></svg>
+{% elif icon == "wikipedia" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.09 13.119c-.936 1.932-2.217 4.548-2.853 5.728-.616 1.074-1.127.931-1.532.029-1.406-3.321-4.293-9.144-5.651-12.409-.251-.601-.441-.987-.619-1.139-.181-.15-.554-.24-1.122-.271C.103 5.033 0 4.982 0 4.898v-.455l.052-.045c.924-.005 5.401 0 5.401 0l.051.045v.434c0 .119-.075.176-.225.176-.564.031-.92.119-1.075.266-.138.127-.175.36-.112.693.515 2.186 2.035 5.851 3.96 9.937l.169-.266 1.095-2.729c.246-.757-.128-1.702-.62-2.567-.537-1.04-1.769-3.27-2.009-3.756-.172-.367-.406-.527-.938-.557-.187-.011-.182-.05-.182-.05v-.496l.051-.045h5.469l.051.045v.496s.011.037-.169.05c-.615.035-.914.131-.914.131-.32.154-.32.487-.02 1.024.9 1.671 1.847 3.51 2.743 5.312l.2-.363 1.531-3.082c.181-.38.232-.784.051-1.107-.135-.238-.379-.376-.724-.416-.182-.025-.183-.05-.183-.05v-.496l.051-.045h4.562l.051.045v.496s.014.041-.162.05c-.606.034-.92.134-1.091.401-.144.222-.108.511.129 1.011.887 1.882 2.102 4.401 2.961 6.194l.172-.306 1.79-3.978c.19-.425.226-.807.058-1.102-.13-.232-.378-.37-.722-.41-.183-.025-.182-.049-.182-.049V4.9l.051-.045h4.121l.051.045v.434c0 .125-.069.179-.219.179-.519.034-.899.145-1.115.357-.198.195-.439.649-.759 1.373-1.014 2.253-3.886 8.167-5.338 11.229-.184.392-.406.59-.651.59-.217 0-.42-.16-.608-.481z"/></svg>
+{% elif icon == "hackernews" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M0 0v24h24V0zm13.017 13.824V19h-2.014v-5.176L6.687 5h2.263l3.064 6.146L15.078 5H17.3z"/></svg>
+{% elif icon == "x" %}
+<svg xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.631 5.905-5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+{% endif %}
+{% endcomponent %}

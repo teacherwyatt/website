@@ -1,0 +1,117 @@
+backend:
+  name: github
+  repo: teacherwyatt/website
+  branch: main
+  base_url: https://teacherwyatt.pages.dev
+  auth_endpoint: oauth/auth
+
+# Multilingual editing: English is the default (files like about.md), Spanish
+# lives alongside as about.es.md. Sveltia shows both languages side-by-side.
+i18n:
+  structure: multiple_files
+  locales: [en, es]
+  default_locale: en
+  # Zola's default-language files have no locale suffix (about.md, not about.en.md).
+  omit_default_locale_from_file_path: true
+
+media_folder: site/static/images/blog
+public_folder: /images/blog
+
+collections:
+  # ---- Blog ---------------------------------------------------------------
+  - name: blog
+    label: Blog
+    label_singular: Blog Post
+    folder: site/content/blog
+    format: toml-frontmatter
+    create: true
+    slug: "{{slug}}"
+    i18n: true
+    filter: { field: "title", pattern: ".*" }
+    fields:
+      - { label: Title, name: title, widget: string, i18n: true }
+      - { label: Date, name: date, widget: datetime, date_format: "YYYY-MM-DD", time_format: false, i18n: duplicate }
+      - { label: Draft, name: draft, widget: boolean, default: false, i18n: duplicate }
+      - { label: Description, name: description, widget: string, required: false, i18n: true }
+      - label: Extra
+        name: extra
+        widget: object
+        i18n: true
+        fields:
+          - { label: Cover image, name: hero_image, widget: image, required: false, default: "", i18n: duplicate }
+      - { label: Body, name: body, widget: markdown, modes: [raw], i18n: true }
+
+  # ---- Home page (edit the long homepage copy) ----------------------------
+  - name: pages
+    label: Pages
+    i18n: true
+    format: toml-frontmatter
+    files:
+      - name: home
+        label: Home page
+        file: site/content/_index.{{locale}}.md
+        i18n: true
+        fields:
+          - { label: Title, name: title, widget: hidden, default: "Home", i18n: true }
+          - label: Content
+            name: extra
+            widget: object
+            i18n: true
+            fields:
+              - { label: Hero headline, name: hero_headline, widget: string, i18n: true }
+              - { label: Hero subheadline, name: hero_subhead, widget: text, i18n: true }
+              - { label: Hero button text, name: hero_cta_text, widget: string, i18n: true }
+              - { label: Hero button link, name: hero_cta_url, widget: string, default: "#contact", i18n: duplicate }
+              - { label: Hero second link text, name: hero_secondary_text, widget: string, i18n: true }
+              - { label: Hero second link url, name: hero_secondary_url, widget: string, default: "#reviews", i18n: duplicate }
+              - { label: Trust line, name: trust_line, widget: string, required: false, i18n: true }
+              - { label: About heading, name: about_heading, widget: string, i18n: true }
+              - { label: About text, name: about_body, widget: text, i18n: true }
+              - { label: About link text, name: about_link_text, widget: string, i18n: true }
+              - { label: Lessons heading, name: lessons_heading, widget: string, i18n: true }
+              - { label: Lessons intro, name: lessons_intro, widget: string, required: false, i18n: true }
+              - label: Lessons
+                name: lessons
+                widget: list
+                i18n: true
+                fields:
+                  - { label: Title, name: title, widget: string, i18n: true }
+                  - { label: Description, name: body, widget: text, i18n: true }
+              - { label: Pricing heading, name: pricing_heading, widget: string, i18n: true }
+              - { label: Pricing intro, name: pricing_intro, widget: text, required: false, i18n: true }
+              - { label: Pricing note, name: pricing_note, widget: text, required: false, i18n: true }
+              - { label: Reviews heading, name: reviews_heading, widget: string, i18n: true }
+              - { label: Reviews note, name: reviews_note, widget: string, required: false, i18n: true }
+              - label: Reviews
+                name: reviews
+                widget: list
+                i18n: true
+                fields:
+                  - { label: Quote, name: quote, widget: text, i18n: true }
+                  - { label: Author, name: author, widget: string, i18n: true }
+              - { label: Contact heading, name: contact_heading, widget: string, i18n: true }
+              - { label: Contact intro, name: contact_intro, widget: text, required: false, i18n: true }
+              - { label: Email, name: contact_email, widget: string, i18n: duplicate }
+              - { label: Phone (display), name: contact_phone, widget: string, i18n: duplicate }
+              - { label: "Phone (tel: link)", name: contact_phone_link, widget: string, i18n: duplicate }
+              - { label: Address, name: contact_address, widget: string, i18n: true }
+              - { label: Facebook URL, name: contact_facebook, widget: string, i18n: duplicate }
+              - { label: Map embed URL, name: map_embed, widget: string, required: false, i18n: duplicate }
+              - { label: Map link URL, name: map_link, widget: string, required: false, i18n: duplicate }
+
+      - name: about
+        label: About page
+        file: site/content/about.{{locale}}.md
+        i18n: true
+        fields:
+          - { label: Title, name: title, widget: string, i18n: true }
+          - { label: Template, name: template, widget: hidden, default: "about.html" }
+          - { label: Date, name: date, widget: hidden, default: "2024-01-01" }
+          - label: Extra
+            name: extra
+            widget: object
+            i18n: true
+            fields:
+              - { label: Unlisted, name: unlisted, widget: hidden, default: true }
+              - { label: Photo, name: photo, widget: image, required: false, i18n: duplicate }
+          - { label: Body, name: body, widget: markdown, modes: [raw], i18n: true }

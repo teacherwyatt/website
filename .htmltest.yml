@@ -1,0 +1,8 @@
+DirectoryPath: site/public
+LogDirectory: .htmltest-cache
+CheckExternal: false
+CheckInternal: true
+CheckInternalHash: true
+CheckMailto: false
+IgnoreAltEmpty: false
+IgnoreDirectoryMissingTrailingSlash: false

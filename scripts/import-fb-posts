@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+trap 'echo >&2 "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/scrape"
+
+# Turn tmp/fb-export/posts.json (from scripts/scrape-facebook) into DRAFT Book
+# Review markdown under tmp/fb-import/ for you to review. Does not touch
+# site/content/. See scrape/import-posts.mjs.
+
+exec node import-posts.mjs "$@"

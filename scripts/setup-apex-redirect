@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# Install (or update) a zone-level Dynamic Redirect rule that sends
+#   https://teacherwyatt.com/<path>?<qs>  ->  https://www.teacherwyatt.com/<path>?<qs>
+# preserving the path and query string (301, permanent).
+#
+# This replaces the old Bulk Redirect that was dropping the path and breaking
+# /admin/* and /oauth/* at the apex.
+#
+# Idempotent: rules are identified by their `description` field so re-running
+# updates in place instead of creating duplicates.
+#
+# Required env:
+#   CLOUDFLARE_API_TOKEN    - token needs Zone:Dynamic Redirect:Edit on the zone
+#   CLOUDFLARE_ZONE_ID      - zone id for teacherwyatt.com
+set -Eeuo pipefail
+trap 'echo >&2 "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+
+: "${CLOUDFLARE_API_TOKEN:?must be set}"
+: "${CLOUDFLARE_ZONE_ID:?must be set}"
+
+API="https://api.cloudflare.com/client/v4"
+AUTH=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+
+RULE_TAG="teacherwyatt: apex -> www (path-preserving)"
+
+cf() {
+  local method="$1" path="$2" body="${3:-}"
+  if [[ -n "$body" ]]; then
+    curl -sS -X "$method" "${AUTH[@]}" "$API$path" -d "$body"
+  else
+    curl -sS -X "$method" "${AUTH[@]}" "$API$path"
+  fi
+}
+
+require_success() {
+  local resp="$1" label="$2"
+  if [[ "$(jq -r .success <<<"$resp")" != "true" ]]; then
+    echo >&2 "Error from Cloudflare API ($label):"
+    jq >&2 . <<<"$resp"
+    exit 1
+  fi
+}
+
+echo "Looking up existing dynamic-redirect ruleset for zone ..."
+# The phase-entrypoint endpoint 404s (as success:false) when no ruleset has
+# ever been created for this phase on this zone. In that case we can't PUT to
+# it — we must POST to /rulesets to create it first. So we look up the
+# ruleset via the list endpoint, which works whether it exists or not.
+LIST=$(cf GET "/zones/$CLOUDFLARE_ZONE_ID/rulesets")
+require_success "$LIST" "list rulesets"
+
+RULESET_ID=$(jq -r '
+  .result[]
+  | select(.phase == "http_request_dynamic_redirect" and .kind == "zone")
+  | .id
+' <<<"$LIST" | head -n1)
+
+if [[ -z "$RULESET_ID" ]]; then
+  echo "No dynamic-redirect ruleset exists yet on this zone; creating one ..."
+  CREATE_BODY=$(jq -n '{
+    name: "default",
+    kind: "zone",
+    phase: "http_request_dynamic_redirect",
+    rules: []
+  }')
+  CREATED=$(cf POST "/zones/$CLOUDFLARE_ZONE_ID/rulesets" "$CREATE_BODY")
+  require_success "$CREATED" "create ruleset"
+  RULESET_ID=$(jq -r .result.id <<<"$CREATED")
+  EXISTING_RULES='[]'
+else
+  echo "Found existing ruleset $RULESET_ID; fetching rules ..."
+  DETAIL=$(cf GET "/zones/$CLOUDFLARE_ZONE_ID/rulesets/$RULESET_ID")
+  require_success "$DETAIL" "get ruleset"
+  EXISTING_RULES=$(jq '.result.rules // []' <<<"$DETAIL")
+fi
+
+# Build our desired rule. Use wirefilter's concat() to stitch the path onto
+# the www host; let Cloudflare append the query string via preserve_query_string
+# (wirefilter has no conditional, so we can't inline the "?" logic).
+read -r -d '' OUR_RULE <<JSON || true
+{
+  "description": $(jq -Rn --arg v "$RULE_TAG" '$v'),
+  "expression": "http.host eq \"teacherwyatt.com\"",
+  "action": "redirect",
+  "action_parameters": {
+    "from_value": {
+      "status_code": 301,
+      "target_url": {
+        "expression": "concat(\"https://www.teacherwyatt.com\", http.request.uri.path)"
+      },
+      "preserve_query_string": true
+    }
+  },
+  "enabled": true
+}
+JSON
+
+# Drop any prior copy of our rule (matched by description), then prepend ours
+# so it runs first.
+NEW_RULES=$(jq --argjson rule "$OUR_RULE" --arg tag "$RULE_TAG" '
+  [$rule] + ([.[] | select(.description != $tag)])
+' <<<"$EXISTING_RULES")
+
+PAYLOAD=$(jq -n --argjson rules "$NEW_RULES" '{ rules: $rules }')
+
+echo "Publishing updated dynamic-redirect ruleset $RULESET_ID ..."
+RESP=$(cf PUT "/zones/$CLOUDFLARE_ZONE_ID/rulesets/$RULESET_ID" "$PAYLOAD")
+require_success "$RESP" "put ruleset"
+
+echo "Done. teacherwyatt.com/<path> now 301-redirects to www.teacherwyatt.com/<path>."
+echo "Verify: curl -sSI https://teacherwyatt.com/admin/config.yml"

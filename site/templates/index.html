@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}{{ config.title }} — {{ config.description }}{% endblock title %}
+{% block description %}{{ config.description }}{% endblock description %}
+
+{% block content %}
+{% set e = section.extra %}
+{% set es = lang == "es" %}
+<div class="home">
+
+  {# ---- Hero ------------------------------------------------------------ #}
+  <section class="home-hero" id="top">
+    <h1 class="home-hero__headline">{{ e.hero_headline }}</h1>
+    <p class="home-hero__subhead">{{ e.hero_subhead }}</p>
+    <div class="home-hero__cta">
+      <a class="btn btn--primary" href="{{ e.hero_cta_url }}">{{ e.hero_cta_text }}</a>
+      <a class="btn btn--ghost" href="{{ e.hero_secondary_url }}">{{ e.hero_secondary_text }}</a>
+    </div>
+    {% if e.trust_line %}<p class="home-hero__trust">{{ e.trust_line }}</p>{% endif %}
+  </section>
+
+  {# ---- Lessons --------------------------------------------------------- #}
+  <section class="home-section" id="lessons">
+    <h2 class="home-section__title">{{ e.lessons_heading }}</h2>
+    {% if e.lessons_intro %}<p class="home-section__intro">{{ e.lessons_intro }}</p>{% endif %}
+    <div class="lesson-grid">
+      {% for l in e.lessons %}
+      <div class="lesson-card">
+        <h3>{{ l.title }}</h3>
+        <p>{{ l.body }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ---- Pricing --------------------------------------------------------- #}
+  <section class="home-section home-section--muted" id="pricing">
+    <h2 class="home-section__title">{{ e.pricing_heading }}</h2>
+    {% if e.pricing_intro %}<p class="home-section__intro">{{ e.pricing_intro }}</p>{% endif %}
+    {% if e.pricing_note %}<p class="home-pricing__note">{{ e.pricing_note }}</p>{% endif %}
+    <div class="home-section__cta">
+      <a class="btn btn--primary" href="#contact">{{ e.hero_cta_text }}</a>
+    </div>
+  </section>
+
+  {# ---- Reviews --------------------------------------------------------- #}
+  <section class="home-section" id="reviews">
+    <h2 class="home-section__title">{{ e.reviews_heading }}</h2>
+    {% if e.reviews_note %}<p class="home-section__intro">{{ e.reviews_note }}</p>{% endif %}
+    <div class="review-grid">
+      {% for r in e.reviews %}
+      <figure class="review-card">
+        <blockquote>{{ r.quote }}</blockquote>
+        <figcaption>— {{ r.author }}</figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ---- About (short) --------------------------------------------------- #}
+  <section class="home-section home-section--muted" id="about">
+    <h2 class="home-section__title">{{ e.about_heading }}</h2>
+    <p class="home-about__body">{{ e.about_body | markdown(inline=true) | safe }}</p>
+    <p><a class="home-about__link" href="{{ config.base_url }}{{ <lang_prefix lang={lang} /> }}/about">{{ e.about_link_text }}</a></p>
+  </section>
+
+  {# ---- Contact --------------------------------------------------------- #}
+  <section class="home-section" id="contact">
+    <h2 class="home-section__title">{{ e.contact_heading }}</h2>
+    {% if e.contact_intro %}<p class="home-section__intro">{{ e.contact_intro }}</p>{% endif %}
+    <ul class="contact-list">
+      <li>
+        <span class="contact-list__label">{% if es %}Correo{% else %}Email{% endif %}</span>
+        <a href="mailto:{{ e.contact_email }}">{{ e.contact_email }}</a>
+      </li>
+      <li>
+        <span class="contact-list__label">{% if es %}Teléfono{% else %}Phone{% endif %}</span>
+        <a href="tel:{{ e.contact_phone_link }}">{{ e.contact_phone }}</a>
+      </li>
+      <li>
+        <span class="contact-list__label">{% if es %}Dónde{% else %}Where{% endif %}</span>
+        <span>{{ e.contact_address }}</span>
+      </li>
+      <li>
+        <span class="contact-list__label">Facebook</span>
+        <a href="{{ e.contact_facebook }}">{% if es %}Página de Facebook{% else %}Facebook page{% endif %}</a>
+      </li>
+    </ul>
+    <div class="home-section__cta">
+      <a class="btn btn--primary" href="mailto:{{ e.contact_email }}">{% if es %}Escríbeme{% else %}Send me a message{% endif %}</a>
+    </div>
+    {% if e.map_embed %}
+    <div class="contact-map">
+      <iframe title="{% if es %}Mapa{% else %}Map{% endif %}" src="{{ e.map_embed }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <p class="contact-map__link"><a href="{{ e.map_link }}" rel="noopener">{% if es %}Ver en el mapa{% else %}View on map{% endif %}</a></p>
+    </div>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock content %}

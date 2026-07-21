@@ -1,0 +1,30 @@
+# environment variables
+.env
+.env.*
+!.env.example
+
+# macOS-specific files
+.DS_Store
+
+# Zola build output and generated local config
+site/public/
+site/config.local.toml
+
+# Node / worker
+worker/node_modules/
+.playwright-mcp
+
+# Giancarlos/guardrails
+.guardrails
+
+# Executables
+/.bin
+
+# Temp files
+/tmp
+
+# Playwright scrape deps (installed on first run)
+scripts/scrape/node_modules/
+
+# Zola resize_image() output — regenerated on every build
+site/static/processed_images/
