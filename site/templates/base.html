@@ -13,9 +13,17 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="canonical" href="{% block canonical %}{{ current_url | default(value=config.base_url) | safe }}{% endblock canonical %}">
+  {%- if page is defined %}{% set translations = page.translations %}{% elif section is defined %}{% set translations = section.translations %}{% else %}{% set translations = [] %}{% endif %}
+  {%- for t in translations %}
+  <link rel="alternate" hreflang="{{ t.lang }}" href="{{ t.permalink | safe }}">
+  {%- if t.lang == config.default_language %}
+  <link rel="alternate" hreflang="x-default" href="{{ t.permalink | safe }}">
+  {%- endif %}
+  {%- endfor %}
   <link rel="preload" as="image" href="{{ get_url(path='images/hero-cropped.webp') }}" imagesrcset="{{ get_url(path='images/hero-cropped-800.webp') }} 800w, {{ get_url(path='images/hero-cropped.webp') }} 1536w" imagesizes="100vw" fetchpriority="high">
   <meta name="description" content="{% block description %}{{ config.description }}{% endblock description %}">
   <meta property="og:site_name" content="{{ config.title }}">
+  <meta property="og:locale" content="{% if lang == "es" %}es_ES{% else %}en_US{% endif %}">
   <meta property="og:title" content="{% block og_title %}{{ config.title }}{% endblock og_title %}">
   <meta property="og:description" content="{% block og_description %}{{ config.description }}{% endblock og_description %}">
   <meta property="og:type" content="{% block og_type %}website{% endblock og_type %}">
