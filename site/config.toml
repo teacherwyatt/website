@@ -17,10 +17,49 @@ theme = "solarized-light"
 # Each English content file (`about.md`, no suffix) has an `.es.md` twin
 # (`about.es.md`). Add `.it.md` / `.fr.md`
 # later plus a matching [languages.xx] block to grow to more audiences.
+#
+# UI strings used by templates via `trans(key=..., lang=lang)`. Every key in
+# [translations] (English) needs a twin in each [languages.xx.translations].
+[translations]
+og_locale = "en_US"
+nav_lessons = "Lessons"
+nav_pricing = "Pricing"
+nav_reviews = "Reviews"
+nav_about = "About"
+nav_contact = "Contact"
+nav_blog = "Blog"
+contact_email = "Email"
+contact_phone = "Phone"
+contact_where = "Where"
+contact_facebook = "Facebook page"
+contact_send = "Send me a message"
+contact_map = "Map"
+contact_view_map = "View on map"
+blog_subtitle = "Books I love for learning English & Spanish"
+about_find_me = "Find me online"
+
 [languages.es]
 title = "TeacherWyatt"
 description = "Clases de inglés y español, cálidas y cercanas — online y presenciales"
 generate_feeds = true
+
+[languages.es.translations]
+og_locale = "es_ES"
+nav_lessons = "Clases"
+nav_pricing = "Precios"
+nav_reviews = "Opiniones"
+nav_about = "Sobre mí"
+nav_contact = "Contacto"
+nav_blog = "Blog"
+contact_email = "Correo"
+contact_phone = "Teléfono"
+contact_where = "Dónde"
+contact_facebook = "Página de Facebook"
+contact_send = "Escríbeme"
+contact_map = "Mapa"
+contact_view_map = "Ver en el mapa"
+blog_subtitle = "Libros que recomiendo para aprender inglés y español"
+about_find_me = "Encuéntrame online"
 
 
 [extra]

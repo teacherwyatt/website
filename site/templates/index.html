@@ -5,7 +5,6 @@
 
 {% block content %}
 {% set e = section.extra %}
-{% set es = lang == "es" %}
 <div class="home">
 
   {# ---- Hero ------------------------------------------------------------ #}
@@ -70,29 +69,29 @@
     {% if e.contact_intro %}<p class="home-section__intro">{{ e.contact_intro }}</p>{% endif %}
     <ul class="contact-list">
       <li>
-        <span class="contact-list__label">{% if es %}Correo{% else %}Email{% endif %}</span>
+        <span class="contact-list__label">{{ trans(key="contact_email", lang=lang) }}</span>
         <a href="mailto:{{ e.contact_email }}">{{ e.contact_email }}</a>
       </li>
       <li>
-        <span class="contact-list__label">{% if es %}Teléfono{% else %}Phone{% endif %}</span>
+        <span class="contact-list__label">{{ trans(key="contact_phone", lang=lang) }}</span>
         <a href="tel:{{ e.contact_phone_link }}">{{ e.contact_phone }}</a>
       </li>
       <li>
-        <span class="contact-list__label">{% if es %}Dónde{% else %}Where{% endif %}</span>
+        <span class="contact-list__label">{{ trans(key="contact_where", lang=lang) }}</span>
         <span>{{ e.contact_address }}</span>
       </li>
       <li>
         <span class="contact-list__label">Facebook</span>
-        <a href="{{ e.contact_facebook }}">{% if es %}Página de Facebook{% else %}Facebook page{% endif %}</a>
+        <a href="{{ e.contact_facebook }}">{{ trans(key="contact_facebook", lang=lang) }}</a>
       </li>
     </ul>
     <div class="home-section__cta">
-      <a class="btn btn--primary" href="mailto:{{ e.contact_email }}">{% if es %}Escríbeme{% else %}Send me a message{% endif %}</a>
+      <a class="btn btn--primary" href="mailto:{{ e.contact_email }}">{{ trans(key="contact_send", lang=lang) }}</a>
     </div>
     {% if e.map_embed %}
     <div class="contact-map">
-      <iframe title="{% if es %}Mapa{% else %}Map{% endif %}" src="{{ e.map_embed }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-      <p class="contact-map__link"><a href="{{ e.map_link }}" rel="noopener">{% if es %}Ver en el mapa{% else %}View on map{% endif %}</a></p>
+      <iframe title="{{ trans(key="contact_map", lang=lang) }}" src="{{ e.map_embed }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <p class="contact-map__link"><a href="{{ e.map_link }}" rel="noopener">{{ trans(key="contact_view_map", lang=lang) }}</a></p>
     </div>
     {% endif %}
   </section>

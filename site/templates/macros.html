@@ -7,21 +7,12 @@
    links (Alchemy-style); Blog is a forward link to its own page. #}
 {% component nav(lang, @config) %}
 {%- set p = <lang_prefix lang={lang} /> -%}
-{%- if lang == "es" -%}
-  {%- set home = "Inicio" -%}{%- set about = "Sobre mí" -%}{%- set langs = "Clases" -%}
-  {%- set price = "Precios" -%}{%- set reviews = "Opiniones" -%}{%- set books = "Blog" -%}
-  {%- set contact = "Contacto" -%}
-{%- else -%}
-  {%- set home = "Home" -%}{%- set about = "About" -%}{%- set langs = "Lessons" -%}
-  {%- set price = "Pricing" -%}{%- set reviews = "Reviews" -%}{%- set books = "Blog" -%}
-  {%- set contact = "Contact" -%}
-{%- endif -%}
-<li><a href="{{ config.base_url }}{{ p }}/#lessons">{{ langs }}</a></li>
-<li><a href="{{ config.base_url }}{{ p }}/#pricing">{{ price }}</a></li>
-<li><a href="{{ config.base_url }}{{ p }}/#reviews">{{ reviews }}</a></li>
-<li><a href="{{ config.base_url }}{{ p }}/#about">{{ about }}</a></li>
-<li><a href="{{ config.base_url }}{{ p }}/#contact">{{ contact }}</a></li>
-<li><a href="{{ config.base_url }}{{ p }}/blog">{{ books }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/#lessons">{{ trans(key="nav_lessons", lang=lang) }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/#pricing">{{ trans(key="nav_pricing", lang=lang) }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/#reviews">{{ trans(key="nav_reviews", lang=lang) }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/#about">{{ trans(key="nav_about", lang=lang) }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/#contact">{{ trans(key="nav_contact", lang=lang) }}</a></li>
+<li><a href="{{ config.base_url }}{{ p }}/blog">{{ trans(key="nav_blog", lang=lang) }}</a></li>
 {%- if config.base_url is starting_with(pat="http://127.0.0.1") or config.base_url is starting_with(pat="http://localhost") -%}
 <li><a href="/admin">Admin</a></li>
 {%- endif -%}
@@ -34,11 +25,15 @@
 {% component lang_toggle(lang, @config, @current_path = "/") %}
 {%- set cur = current_path -%}
 {# Strip a leading non-default-language prefix ("/es") to get the language-neutral
-   base path, so each toggle link lands on the twin page. When adding a new
-   language, add its prefix to `known` below. #}
-{%- set known = ["es"] -%}
+   base path, so each toggle link lands on the twin page. `config.languages`
+   lists every language *except the one being rendered*, so add `lang` back and
+   sort for a stable order across pages. #}
+{%- set codes = lang -%}
+{%- for l, _ in config.languages -%}{%- set_global codes = codes ~ "," ~ l -%}{%- endfor -%}
+{%- set all_langs = codes | split(pat=",") | sort -%}
 {%- set base = cur -%}
-{%- for l in known -%}
+{%- for l in all_langs -%}
+  {%- if l == config.default_language -%}{%- continue -%}{%- endif -%}
   {%- if cur == "/" ~ l or cur == "/" ~ l ~ "/" -%}
     {%- set_global base = "/" -%}
   {%- elif cur is starting_with(pat="/" ~ l ~ "/") -%}
@@ -46,9 +41,12 @@
   {%- endif -%}
 {%- endfor -%}
 <div class="lang-toggle" role="group" aria-label="Language">
-  <a href="{{ config.base_url }}{{ base }}"{% if lang == config.default_language %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>EN</a>
+  <a href="{{ config.base_url }}{{ base }}"{% if lang == config.default_language %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>{{ config.default_language | upper }}</a>
+  {%- for l in all_langs %}
+  {%- if l == config.default_language %}{% continue %}{% endif %}
   <span class="lang-toggle__sep" aria-hidden="true">·</span>
-  <a href="{{ config.base_url }}/es{{ base }}"{% if lang == "es" %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>ES</a>
+  <a href="{{ config.base_url }}/{{ l }}{{ base }}"{% if lang == l %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>{{ l | upper }}</a>
+  {%- endfor %}
 </div>
 {% endcomponent lang_toggle %}
 

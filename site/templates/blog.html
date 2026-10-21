@@ -6,7 +6,7 @@
 <div class="blog-page-wrap">
   <div class="blog-header">
     <h1>{{ section.title }}</h1>
-    <p>{% if lang == "es" %}Libros que recomiendo para aprender inglés y español{% else %}Books I love for learning English & Spanish{% endif %}</p>
+    <p>{{ trans(key="blog_subtitle", lang=lang) }}</p>
   </div>
   <div class="blog-grid">
     {% for page in paginator.pages %}
