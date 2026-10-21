@@ -4,6 +4,30 @@ trap 'echo >&2 "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ER
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
+# Zola has no language fallback, so every content file needs a twin in each
+# language: English `about.md` <-> `about.<lang>.md` for each [languages.<lang>].
+echo >&2 "Checking content files have a twin in every language ..."
+missing=0
+while read -r lang; do
+  while read -r f; do
+    if [[ "$f" == *."$lang".md ]]; then
+      twin="${f%."$lang".md}.md"
+    elif [[ "$f" =~ \.[a-z]{2}\.md$ ]]; then
+      continue # another non-default language's file
+    else
+      twin="${f%.md}.$lang.md"
+    fi
+    if [[ ! -f "$twin" ]]; then
+      echo >&2 "  missing: $twin (twin of $f)"
+      missing=1
+    fi
+  done < <(find site/content -name '*.md')
+done < <(sed -n 's/^\[languages\.\([a-z][a-z]\)\]$/\1/p' site/config.toml)
+if [[ $missing -ne 0 ]]; then
+  echo >&2 "Add the missing translation files listed above."
+  exit 1
+fi
+
 "$SCRIPT_DIR/build"
 
 echo >&2 "Checking built site with htmltest ..."
