@@ -14,7 +14,8 @@ theme = "solarized-light"
 
 # --- Multilingual (i18n) -----------------------------------------------------
 # English is the default language (served at /). Spanish is served under /es/.
-# Each content file has an `.en.md` / `.es.md` twin. Add `.it.md` / `.fr.md`
+# Each English content file (`about.md`, no suffix) has an `.es.md` twin
+# (`about.es.md`). Add `.it.md` / `.fr.md`
 # later plus a matching [languages.xx] block to grow to more audiences.
 [languages.es]
 title = "TeacherWyatt"
