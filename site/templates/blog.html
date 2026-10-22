@@ -45,6 +45,6 @@
     {% endif %}
     {% endfor %}
   </div>
-  {{ <pagination paginator={paginator} base="/blog/page/" lang={lang} /> }}
+  {{ <pagination paginator={paginator} base={paginator.base_url} lang={lang} /> }}
 </div>
 {% endblock content %}
