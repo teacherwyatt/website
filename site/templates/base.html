@@ -89,11 +89,11 @@
   {%- endif %}{% endfor %}
   <script>
     // Preferred language: explicit `lang` cookie, else the first site language
-    // in the browser's preferences. Dismissing hides the banner for good.
+    // in the browser's preferences. Dismissing hides it until this tab is closed.
     (function() {
       var banners = document.querySelectorAll(".lang-banner[data-banner-lang]");
       if (!banners.length) return;
-      try { if (localStorage.getItem("langBannerDismissed")) return; } catch (e) {}
+      try { if (sessionStorage.getItem("langBannerDismissed")) return; } catch (e) {}
       var here = document.documentElement.lang, langs = [here];
       for (var i = 0; i < banners.length; i++) langs.push(banners[i].getAttribute("data-banner-lang"));
       var m = document.cookie.match(/(?:^|;\s*)lang=([^;]+)/);
@@ -111,7 +111,7 @@
       banner.hidden = false;
       banner.querySelector(".lang-banner__close").addEventListener("click", function() {
         banner.hidden = true;
-        try { localStorage.setItem("langBannerDismissed", "1"); } catch (e) {}
+        try { sessionStorage.setItem("langBannerDismissed", "1"); } catch (e) {}
       });
     })();
   </script>
