@@ -17,3 +17,14 @@ if [[ $# -eq 0 ]]; then
   set -- --base-url /
 fi
 zola --root site build "$@"
+
+# Zola renders only one 404.html, in the default language. content/404*.md
+# render each language's 404 page to <lang>/404/index.html; move them to
+# <lang>/404.html, which Cloudflare Pages serves for missing URLs under that
+# directory (the nearest 404.html wins).
+for f in site/public/404/index.html site/public/*/404/index.html; do
+  [[ -f "$f" ]] || continue
+  dir="$(dirname "$f")"
+  mv "$f" "$(dirname "$dir")/404.html"
+  rmdir "$dir"
+done

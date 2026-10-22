@@ -58,6 +58,12 @@ page_prev = "Previous 10 pages"
 page_next = "Next 10 pages"
 page_last = "Last page"
 rights = "All rights reserved."
+not_found_title = "404 Not Found"
+not_found_heading = "404 Page Not Found"
+not_found_alt = "You are here -- lost"
+not_found_text = "This page doesn't exist."
+not_found_joke = "Either you're lost, or I need to fire the web developer. Oh wait&mdash;that's me."
+not_found_home = "Take me home"
 
 [languages.es]
 title = "TeacherWyatt"
@@ -102,6 +108,12 @@ page_prev = "10 páginas anteriores"
 page_next = "10 páginas siguientes"
 page_last = "Última página"
 rights = "Todos los derechos reservados."
+not_found_title = "404 Página no encontrada"
+not_found_heading = "404 Página no encontrada"
+not_found_alt = "Estás aquí: perdido"
+not_found_text = "Esta página no existe."
+not_found_joke = "O te has perdido, o tengo que despedir al desarrollador web. Ah, espera&mdash;soy yo."
+not_found_home = "Llévame al inicio"
 
 
 [extra]

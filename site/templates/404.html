@@ -1,16 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}404 Not Found | {{ config.title }}{% endblock title %}
+{% block title %}{{ trans(key="not_found_title", lang=lang) }} | {{ config.title }}{% endblock title %}
+{# Rendered both by Zola (default language, /404.html) and by content/404*.md
+   (one per language, moved into place by scripts/build). The content pages'
+   own URLs disappear after the move, so point canonical at the language home. #}
+{% block canonical %}{{ config.base_url }}{{ <lang_prefix lang={lang} /> }}/{% endblock canonical %}
 
 {% block content %}
 <div class="prose">
   <article>
-    <h1>404 Page Not Found</h1>
+    <h1>{{ trans(key="not_found_heading", lang=lang) }}</h1>
     {% set img_404_meta = get_image_metadata(path="static/images/404.webp") %}
-    <img src="{{ get_url(path='images/404.webp') }}" alt="You are here -- lost" width="{{ img_404_meta.width }}" height="{{ img_404_meta.height }}" style="width:100%;height:auto;border-radius:4px;margin-bottom:1.5rem;">
-    <p>This page doesn't exist.</p>
-    <p>Either you're lost, or I need to fire the web developer. Oh wait&mdash;that's me.</p>
-    <p><a href="{{ config.base_url }}">Take me home</a></p>
+    <img src="{{ get_url(path='images/404.webp') }}" alt="{{ trans(key="not_found_alt", lang=lang) }}" width="{{ img_404_meta.width }}" height="{{ img_404_meta.height }}" style="width:100%;height:auto;border-radius:4px;margin-bottom:1.5rem;">
+    <p>{{ trans(key="not_found_text", lang=lang) }}</p>
+    <p>{{ trans(key="not_found_joke", lang=lang) | safe }}</p>
+    <p><a href="{{ config.base_url }}{{ <lang_prefix lang={lang} /> }}/">{{ trans(key="not_found_home", lang=lang) }}</a></p>
   </article>
 </div>
 {% endblock content %}

@@ -13,7 +13,10 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="canonical" href="{% block canonical %}{{ current_url | default(value=config.base_url) | safe }}{% endblock canonical %}">
-  {%- if page is defined %}{% set translations = page.translations %}{% elif section is defined %}{% set translations = section.translations %}{% else %}{% set translations = [] %}{% endif %}
+  {#- 404 pages (content/404*.md) are not translations of one another: no
+      hreflang, no banner, and the toggle goes to each language's homepage. #}
+  {%- set not_found = page is defined and page.extra.not_found is defined %}
+  {%- if not_found %}{% set translations = [] %}{% elif page is defined %}{% set translations = page.translations %}{% elif section is defined %}{% set translations = section.translations %}{% else %}{% set translations = [] %}{% endif %}
   {%- for t in translations %}
   <link rel="alternate" hreflang="{{ t.lang }}" href="{{ t.permalink | safe }}">
   {%- if t.lang == config.default_language %}
@@ -56,7 +59,7 @@
         </ul>
       </nav>
       <div class="header-controls">
-        {{ <lang_toggle lang={lang} /> }}
+        {% if not_found %}{{ <lang_toggle lang={lang} current_path="/" /> }}{% else %}{{ <lang_toggle lang={lang} /> }}{% endif %}
       </div>
       <button class="hamburger-btn" aria-label="{{ trans(key="menu_open", lang=lang) }}" aria-expanded="false" aria-controls="mobile-menu">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -75,7 +78,7 @@
     </nav>
     <div class="mobile-menu__divider"></div>
     <div class="mobile-menu__controls">
-      {{ <lang_toggle lang={lang} /> }}
+      {% if not_found %}{{ <lang_toggle lang={lang} current_path="/" /> }}{% else %}{{ <lang_toggle lang={lang} /> }}{% endif %}
     </div>
   </div>
   {#- One hidden banner per translation of this page, written in that language.

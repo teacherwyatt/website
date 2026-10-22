@@ -15,6 +15,8 @@ Default-language (English) files are `page.md`; other languages use
 `page.<lang>.md` twins (e.g. `about.md` + `about.es.md`). Every section
 `_index.md` needs an `_index.<lang>.md` twin — Zola has no language fallback.
 Nav labels and the language toggle live in `site/templates/macros.html`.
+Per-language 404 pages come from `content/404*.md`; `scripts/build` moves
+each to `<lang>/404.html` (Zola itself renders only the default language's).
 
 ## Tools
 Use `scripts/build` to build and `scripts/check` (htmltest) to validate links
