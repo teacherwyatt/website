@@ -47,7 +47,7 @@
     {%- set_global base = cur | trim_start(pat="/" ~ l) -%}
   {%- endif -%}
 {%- endfor -%}
-<div class="lang-toggle" role="group" aria-label="Language">
+<div class="lang-toggle" role="group" aria-label="{{ trans(key="lang_group", lang=lang) }}">
   <a href="{{ config.base_url }}{{ base }}" data-lang="{{ config.default_language }}"{% if lang == config.default_language %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>{{ config.default_language | upper }}</a>
   {%- for l in all_langs %}
   {%- if l == config.default_language %}{% continue %}{% endif %}
@@ -65,7 +65,7 @@
 {{- img.url -}}
 {% endcomponent blog_img %}
 
-{% component pagination(paginator, base) %}
+{% component pagination(paginator, base, lang) %}
 {% if paginator.number_pagers > 1 %}
 {% set cur = paginator.current_index %}
 {% set total = paginator.number_pagers %}
@@ -85,10 +85,10 @@
 {% set next_group = cur + 10 %}
 {% set next_step = cur + 1 %}
 {% set prev_step = cur - 1 %}
-<nav class="pagination" aria-label="Page navigation">
+<nav class="pagination" aria-label="{{ trans(key="page_nav", lang=lang) }}">
   {% if cur > 1 %}
-  <a href="{{ base }}1/" class="pagination-btn" aria-label="First page">&laquo;</a>
-  {% if prev_group >= 1 %}<a href="{{ base }}{{ prev_group }}/" class="pagination-btn" aria-label="Previous 10 pages">&lsaquo;</a>{% else %}<a href="{{ base }}{{ prev_step }}/" class="pagination-btn" aria-label="Previous 10 pages">&lsaquo;</a>{% endif %}
+  <a href="{{ base }}1/" class="pagination-btn" aria-label="{{ trans(key="page_first", lang=lang) }}">&laquo;</a>
+  {% if prev_group >= 1 %}<a href="{{ base }}{{ prev_group }}/" class="pagination-btn" aria-label="{{ trans(key="page_prev", lang=lang) }}">&lsaquo;</a>{% else %}<a href="{{ base }}{{ prev_step }}/" class="pagination-btn" aria-label="{{ trans(key="page_prev", lang=lang) }}">&lsaquo;</a>{% endif %}
   {% else %}
   <span class="pagination-btn pagination-btn--disabled" aria-disabled="true">&laquo;</span>
   <span class="pagination-btn pagination-btn--disabled" aria-disabled="true">&lsaquo;</span>
@@ -101,8 +101,8 @@
   {% endif %}
   {% endfor %}
   {% if cur < total %}
-  {% if next_group <= total %}<a href="{{ base }}{{ next_group }}/" class="pagination-btn" aria-label="Next 10 pages">&rsaquo;</a>{% else %}<a href="{{ base }}{{ next_step }}/" class="pagination-btn" aria-label="Next 10 pages">&rsaquo;</a>{% endif %}
-  <a href="{{ base }}{{ total }}/" class="pagination-btn" aria-label="Last page">&raquo;</a>
+  {% if next_group <= total %}<a href="{{ base }}{{ next_group }}/" class="pagination-btn" aria-label="{{ trans(key="page_next", lang=lang) }}">&rsaquo;</a>{% else %}<a href="{{ base }}{{ next_step }}/" class="pagination-btn" aria-label="{{ trans(key="page_next", lang=lang) }}">&rsaquo;</a>{% endif %}
+  <a href="{{ base }}{{ total }}/" class="pagination-btn" aria-label="{{ trans(key="page_last", lang=lang) }}">&raquo;</a>
   {% else %}
   <span class="pagination-btn pagination-btn--disabled" aria-disabled="true">&rsaquo;</span>
   <span class="pagination-btn pagination-btn--disabled" aria-disabled="true">&raquo;</span>

@@ -33,7 +33,7 @@
   <link rel="preload" as="image" href="{{ get_url(path='images/hero-cropped.webp') }}" imagesrcset="{{ get_url(path='images/hero-cropped-800.webp') }} 800w, {{ get_url(path='images/hero-cropped.webp') }} 1536w" imagesizes="100vw" fetchpriority="high">
   <meta name="description" content="{% block description %}{{ config.description }}{% endblock description %}">
   <meta property="og:site_name" content="{{ config.title }}">
-  <meta property="og:locale" content="{{ trans(key="og_locale", lang=lang) }}">
+  <meta property="og:locale" content="{{ trans(key="locale", lang=lang) }}">
   <meta property="og:title" content="{% block og_title %}{{ config.title }}{% endblock og_title %}">
   <meta property="og:description" content="{% block og_description %}{{ config.description }}{% endblock og_description %}">
   <meta property="og:type" content="{% block og_type %}website{% endblock og_type %}">
@@ -58,7 +58,7 @@
       <div class="header-controls">
         {{ <lang_toggle lang={lang} /> }}
       </div>
-      <button class="hamburger-btn" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-menu">
+      <button class="hamburger-btn" aria-label="{{ trans(key="menu_open", lang=lang) }}" aria-expanded="false" aria-controls="mobile-menu">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="3" y1="6" x2="21" y2="6"/>
           <line x1="3" y1="12" x2="21" y2="12"/>
@@ -145,7 +145,7 @@
           </div>
         </div>
       </div>
-      <p class="footer-copy">&copy; {{ now() | date(format="%Y") }} {{ config.title }}. All rights reserved.</p>
+      <p class="footer-copy">&copy; {{ now() | date(format="%Y") }} {{ config.title }}. {{ trans(key="rights", lang=lang) }}</p>
     </footer>
   </div>
   <script>

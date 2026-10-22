@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
 {% block title %}{{ page.title }} | {{ config.title }}{% endblock title %}
-{% block description %}{% if page.description %}{{ page.description }}{% else %}Game design, programming and more{% endif %}{% endblock description %}
+{% block description %}{% if page.description %}{{ page.description }}{% else %}{{ config.description }}{% endif %}{% endblock description %}
 {% block og_title %}{{ page.title }}{% endblock og_title %}
-{% block og_description %}{% if page.description %}{{ page.description }}{% else %}Game design, programming and more{% endif %}{% endblock og_description %}
+{% block og_description %}{% if page.description %}{{ page.description }}{% else %}{{ config.description }}{% endif %}{% endblock og_description %}
 {% block og_type %}article{% endblock og_type %}
 {% block og_url %}{{ page.permalink | safe }}{% endblock og_url %}
 {% block og_image %}{% if page.extra.hero_image and not page.extra.hero_image is containing(pat="_default-") %}{% set p = "static" ~ page.extra.hero_image %}{% set m = get_image_metadata(path=p) %}{% set i = resize_image(path=p, width=m.width, height=m.height, op="scale", format="webp", quality=85) %}{{ config.base_url | safe }}{{ i.url | safe }}{% elif page.description %}{{ config.base_url | safe }}/images/hero.webp{% endif %}{% endblock og_image %}
 {% block twitter_title %}{{ page.title }}{% endblock twitter_title %}
-{% block twitter_description %}{% if page.description %}{{ page.description }}{% else %}Game design, programming and more{% endif %}{% endblock twitter_description %}
+{% block twitter_description %}{% if page.description %}{{ page.description }}{% else %}{{ config.description }}{% endif %}{% endblock twitter_description %}
 {% block twitter_image %}{% if page.extra.hero_image and not page.extra.hero_image is containing(pat="_default-") %}{% set p = "static" ~ page.extra.hero_image %}{% set m = get_image_metadata(path=p) %}{% set i = resize_image(path=p, width=m.width, height=m.height, op="scale", format="webp", quality=85) %}{{ config.base_url | safe }}{{ i.url | safe }}{% elif page.description %}{{ config.base_url | safe }}/images/hero.webp{% endif %}{% endblock twitter_image %}
 
 {% block content %}
@@ -37,7 +37,7 @@
 <div class="prose">
   <article>
     <h1 style="margin-bottom: 0">{{ page.title }}</h1>
-    <time datetime="{{ page.date }}" class="post-date" data-iso="{{ page.date }}">{{ page.date | date(format="%B %d, %Y") }}</time>
+    <time datetime="{{ page.date }}" class="post-date" data-iso="{{ page.date }}">{{ page.date | date(format=trans(key="date_long", lang=lang), locale=trans(key="locale", lang=lang)) }}</time>
     {% if page.extra.hero_image %}
     {% set hero_path = "static" ~ page.extra.hero_image %}
     {% set hero_meta = get_image_metadata(path=hero_path) %}
@@ -52,11 +52,12 @@
     (function() {
       var el = document.querySelector('time.post-date[data-iso]');
       if (!el) return;
+      var rel = { now: {{ trans(key="rel_just_now", lang=lang) | json_encode() | safe }}, m: {{ trans(key="rel_minutes", lang=lang) | json_encode() | safe }}, h: {{ trans(key="rel_hours", lang=lang) | json_encode() | safe }}, d: {{ trans(key="rel_days", lang=lang) | json_encode() | safe }} };
       var seconds = Math.floor((Date.now() - new Date(el.getAttribute('data-iso')).getTime()) / 1000);
-      if (seconds < 60) el.textContent = 'just now';
-      else if (seconds < 3600) el.textContent = Math.floor(seconds / 60) + 'm ago';
-      else if (seconds < 86400) el.textContent = Math.floor(seconds / 3600) + 'h ago';
-      else if (seconds < 2592000) el.textContent = Math.floor(seconds / 86400) + 'd ago';
+      if (seconds < 60) el.textContent = rel.now;
+      else if (seconds < 3600) el.textContent = rel.m.replace("{n}", Math.floor(seconds / 60));
+      else if (seconds < 86400) el.textContent = rel.h.replace("{n}", Math.floor(seconds / 3600));
+      else if (seconds < 2592000) el.textContent = rel.d.replace("{n}", Math.floor(seconds / 86400));
     })();
   </script>
 </div>
@@ -84,13 +85,13 @@
 {% endfor %}
 {% if newer or older %}
 <section class="post-nav-section">
-  <nav class="post-nav" aria-label="More posts">
+  <nav class="post-nav" aria-label="{{ trans(key="post_nav_label", lang=lang) }}">
     <div class="post-nav__grid">
       {% if newer %}
       {% set n = newer %}
       {% if n.extra.hero_image %}{% set hero = n.extra.hero_image %}{% else %}{% set hero = "/images/blog/_default-post.webp" %}{% endif %}
       <article class="post-card post-nav__card">
-        <div class="post-nav__label">&larr; Newer post</div>
+        <div class="post-nav__label">&larr; {{ trans(key="post_newer", lang=lang) }}</div>
         <a href="{{ n.permalink }}" class="post-card-img-link">
           {% set img_tiny = <blog_img hero={hero} width={400} /> %}
           {% set img_small = <blog_img hero={hero} width={800} /> %}
@@ -101,7 +102,7 @@
                alt="{{ n.title }}" class="post-card-img" width="800" height="450">
         </a>
         <div class="post-card-content">
-          <time class="post-card-meta" datetime="{{ n.date }}">{{ n.date | date(format="%b %d, %Y") }}</time>
+          <time class="post-card-meta" datetime="{{ n.date }}">{{ n.date | date(format=trans(key="date_short", lang=lang), locale=trans(key="locale", lang=lang)) }}</time>
           <a href="{{ n.permalink }}" class="post-card-title-link"><h2>{{ n.title }}</h2></a>
           {% if n.description %}<p>{{ n.description }}</p>{% endif %}
         </div>
@@ -114,7 +115,7 @@
       {% set o = older %}
       {% if o.extra.hero_image %}{% set hero = o.extra.hero_image %}{% else %}{% set hero = "/images/blog/_default-post.webp" %}{% endif %}
       <article class="post-card post-nav__card post-nav__card--older">
-        <div class="post-nav__label">Older post &rarr;</div>
+        <div class="post-nav__label">{{ trans(key="post_older", lang=lang) }} &rarr;</div>
         <a href="{{ o.permalink }}" class="post-card-img-link">
           {% set img_tiny = <blog_img hero={hero} width={400} /> %}
           {% set img_small = <blog_img hero={hero} width={800} /> %}
@@ -125,7 +126,7 @@
                alt="{{ o.title }}" class="post-card-img" width="800" height="450">
         </a>
         <div class="post-card-content">
-          <time class="post-card-meta" datetime="{{ o.date }}">{{ o.date | date(format="%b %d, %Y") }}</time>
+          <time class="post-card-meta" datetime="{{ o.date }}">{{ o.date | date(format=trans(key="date_short", lang=lang), locale=trans(key="locale", lang=lang)) }}</time>
           <a href="{{ o.permalink }}" class="post-card-title-link"><h2>{{ o.title }}</h2></a>
           {% if o.description %}<p>{{ o.description }}</p>{% endif %}
         </div>
