@@ -6,6 +6,8 @@ Website for Kristin Wyatt (English & Spanish teacher, Nigrán, Spain).
 - **Site**: Zola static site generator, multilingual (EN default at `/`, ES at `/es/`)
 - **CMS**: Sveltia CMS at `/admin` (Kristin self-edits both languages)
 - **CMS auth**: Pages Functions in `functions/` (GitHub OAuth + `/admin` gate)
+- **Language negotiation**: `functions/index.js` redirects external arrivals at
+  `/` to their language; every other URL is a permalink and never redirects
 - **Deployment**: Cloudflare Pages (teacherwyatt.pages.dev) on push to `main`
 
 ## Multilingual
