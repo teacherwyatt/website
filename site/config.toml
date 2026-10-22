@@ -37,6 +37,9 @@ contact_map = "Map"
 contact_view_map = "View on map"
 blog_subtitle = "Books I love for learning English & Spanish"
 about_find_me = "Find me online"
+banner_text = "This page is available in English."
+banner_link = "Read it in English →"
+banner_close = "Close"
 
 [languages.es]
 title = "TeacherWyatt"
@@ -60,6 +63,9 @@ contact_map = "Mapa"
 contact_view_map = "Ver en el mapa"
 blog_subtitle = "Libros que recomiendo para aprender inglés y español"
 about_find_me = "Encuéntrame online"
+banner_text = "Esta página está disponible en español."
+banner_link = "Leer en español →"
+banner_close = "Cerrar"
 
 
 [extra]

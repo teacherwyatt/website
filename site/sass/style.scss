@@ -273,6 +273,41 @@ a {
   }
 }
 
+// ── Language banner ("This page is available in English →") ─────────────────
+
+.lang-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: var(--border);
+  color: var(--body-color);
+  font-size: 0.9rem;
+
+  &[hidden] {
+    display: none;
+  }
+
+  &__text {
+    margin: 0;
+  }
+
+  &__text a {
+    font-weight: 600;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0.25rem;
+    cursor: pointer;
+  }
+}
+
 // ── Banner ──────────────────────────────────────────────────────────────────
 
 .banner-wrap {

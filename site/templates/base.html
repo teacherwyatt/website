@@ -78,6 +78,43 @@
       {{ <lang_toggle lang={lang} /> }}
     </div>
   </div>
+  {#- One hidden banner per translation of this page, written in that language.
+      The script shows the one matching the visitor's preferred language; it
+      never redirects. #}
+  {%- for t in translations %}{% if t.lang != lang %}
+  <div class="lang-banner" data-banner-lang="{{ t.lang }}" lang="{{ t.lang }}" hidden>
+    <p class="lang-banner__text">{{ trans(key="banner_text", lang=t.lang) }} <a href="{{ t.permalink | safe }}" data-lang="{{ t.lang }}">{{ trans(key="banner_link", lang=t.lang) }}</a></p>
+    <button type="button" class="lang-banner__close" aria-label="{{ trans(key="banner_close", lang=t.lang) }}">&times;</button>
+  </div>
+  {%- endif %}{% endfor %}
+  <script>
+    // Preferred language: explicit `lang` cookie, else the first site language
+    // in the browser's preferences. Dismissing hides the banner for good.
+    (function() {
+      var banners = document.querySelectorAll(".lang-banner[data-banner-lang]");
+      if (!banners.length) return;
+      try { if (localStorage.getItem("langBannerDismissed")) return; } catch (e) {}
+      var here = document.documentElement.lang, langs = [here];
+      for (var i = 0; i < banners.length; i++) langs.push(banners[i].getAttribute("data-banner-lang"));
+      var m = document.cookie.match(/(?:^|;\s*)lang=([^;]+)/);
+      var pref = m && langs.indexOf(m[1]) >= 0 ? m[1] : null;
+      if (!pref) {
+        var prefs = navigator.languages || [navigator.language || ""];
+        for (var j = 0; j < prefs.length && !pref; j++) {
+          var p = String(prefs[j]).toLowerCase().split("-")[0];
+          if (langs.indexOf(p) >= 0) pref = p;
+        }
+      }
+      if (!pref || pref === here) return;
+      var banner = document.querySelector('.lang-banner[data-banner-lang="' + pref + '"]');
+      if (!banner) return;
+      banner.hidden = false;
+      banner.querySelector(".lang-banner__close").addEventListener("click", function() {
+        banner.hidden = true;
+        try { localStorage.setItem("langBannerDismissed", "1"); } catch (e) {}
+      });
+    })();
+  </script>
   {% block banner %}
   {% set banner_meta = get_image_metadata(path="static/images/hero-cropped.webp") %}
   <div class="banner-wrap">
