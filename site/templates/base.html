@@ -20,6 +20,16 @@
   <link rel="alternate" hreflang="x-default" href="{{ t.permalink | safe }}">
   {%- endif %}
   {%- endfor %}
+  <script>
+    // Remember explicit language choices (any link with data-lang, e.g. the
+    // EN/ES toggle) in the `lang` cookie. Only functions/index.js reads it, to
+    // pick a language for visitors arriving at "/". Pages never redirect, so
+    // shared deep links always show the language they were shared in.
+    document.addEventListener("click", function(e) {
+      var a = e.target.closest && e.target.closest("a[data-lang]");
+      if (a) document.cookie = "lang=" + a.getAttribute("data-lang") + "; path=/; max-age=31536000; SameSite=Lax; Secure";
+    });
+  </script>
   <link rel="preload" as="image" href="{{ get_url(path='images/hero-cropped.webp') }}" imagesrcset="{{ get_url(path='images/hero-cropped-800.webp') }} 800w, {{ get_url(path='images/hero-cropped.webp') }} 1536w" imagesizes="100vw" fetchpriority="high">
   <meta name="description" content="{% block description %}{{ config.description }}{% endblock description %}">
   <meta property="og:site_name" content="{{ config.title }}">

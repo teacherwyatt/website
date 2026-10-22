@@ -18,6 +18,15 @@
 {%- endif -%}
 {% endcomponent nav %}
 
+{# Every site language code, sorted and comma-separated (e.g. "en,es").
+   `config.languages` lists every language *except the one being rendered*, so
+   add `lang` back; sorting gives a stable order across pages. #}
+{% component lang_codes(lang, @config) %}
+{%- set codes = lang -%}
+{%- for l, _ in config.languages -%}{%- set_global codes = codes ~ "," ~ l -%}{%- endfor -%}
+{{- codes | split(pat=",") | sort | join(sep=",") -}}
+{% endcomponent lang_codes %}
+
 {# Language toggle: links to the same page in each language. `current_path` is
    Zola's path for the active page (e.g. "/es/blog/"). We derive the base path
    (without any language prefix) and re-prefix it for each language so the
@@ -25,12 +34,10 @@
 {% component lang_toggle(lang, @config, @current_path = "/") %}
 {%- set cur = current_path -%}
 {# Strip a leading non-default-language prefix ("/es") to get the language-neutral
-   base path, so each toggle link lands on the twin page. `config.languages`
-   lists every language *except the one being rendered*, so add `lang` back and
-   sort for a stable order across pages. #}
-{%- set codes = lang -%}
-{%- for l, _ in config.languages -%}{%- set_global codes = codes ~ "," ~ l -%}{%- endfor -%}
-{%- set all_langs = codes | split(pat=",") | sort -%}
+   base path, so each toggle link lands on the twin page. `data-lang` lets the
+   language-redirect script in base.html remember the visitor's choice. #}
+{%- set codes = <lang_codes lang={lang} /> -%}
+{%- set all_langs = codes | split(pat=",") -%}
 {%- set base = cur -%}
 {%- for l in all_langs -%}
   {%- if l == config.default_language -%}{%- continue -%}{%- endif -%}
@@ -41,11 +48,11 @@
   {%- endif -%}
 {%- endfor -%}
 <div class="lang-toggle" role="group" aria-label="Language">
-  <a href="{{ config.base_url }}{{ base }}"{% if lang == config.default_language %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>{{ config.default_language | upper }}</a>
+  <a href="{{ config.base_url }}{{ base }}" data-lang="{{ config.default_language }}"{% if lang == config.default_language %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>{{ config.default_language | upper }}</a>
   {%- for l in all_langs %}
   {%- if l == config.default_language %}{% continue %}{% endif %}
   <span class="lang-toggle__sep" aria-hidden="true">·</span>
-  <a href="{{ config.base_url }}/{{ l }}{{ base }}"{% if lang == l %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>{{ l | upper }}</a>
+  <a href="{{ config.base_url }}/{{ l }}{{ base }}" data-lang="{{ l }}"{% if lang == l %} class="lang-toggle__opt lang-toggle__opt--active" aria-current="true"{% else %} class="lang-toggle__opt"{% endif %}>{{ l | upper }}</a>
   {%- endfor %}
 </div>
 {% endcomponent lang_toggle %}
